@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Record Management System</title>
     
-    <!-- SheetJS library for reading Excel files -->
+    <!-- SheetJS library for reading and writing Excel files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
@@ -80,6 +80,7 @@
             display: flex;
             gap: 1rem;
             align-items: center;
+            flex-wrap: wrap;
         }
         .toolbar input[type="text"] {
             flex: 1;
@@ -87,6 +88,7 @@
             box-sizing: border-box;
             font-size: 1rem;
             border: 2px solid #3498db;
+            min-width: 250px;
         }
         .btn-import {
             background-color: #27ae60;
@@ -100,6 +102,20 @@
         }
         .btn-import:hover {
             background-color: #2ecc71;
+        }
+        .btn-export {
+            background-color: #8e44ad;
+            color: white;
+            padding: 0.8rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+        .btn-export:hover {
+            background-color: #9b59b6;
         }
         table {
             width: 100%;
@@ -145,7 +161,6 @@
             
             <div class="form-group">
                 <input type="text" id="numInput" placeholder="Receipt No" required autocomplete="off">
-                <!-- Changed to type="month" -->
                 <input type="month" id="dateInput" required>
                 <input type="text" id="repInput" placeholder="Representative" required autocomplete="off">
                 <input type="text" id="reasonInput" placeholder="Reason" required autocomplete="off">
@@ -158,6 +173,7 @@
             <input type="text" id="searchInput" placeholder="Search by receipt no, date, rep, or reason..." autocomplete="off">
             <label for="excelUpload" class="btn-import">📥 Import Excel</label>
             <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" style="display: none;">
+            <button class="btn-export" id="exportBtn">📤 Export Excel</button>
         </div>
 
         <table id="dataTable">
@@ -184,9 +200,44 @@
         const messageBox = document.getElementById('messageBox');
         const searchInput = document.getElementById('searchInput');
         const excelUpload = document.getElementById('excelUpload');
+        const exportBtn = document.getElementById('exportBtn');
         
         // Initial render
         renderTable();
+
+        // -----------------------------
+        // EXCEL EXPORT LOGIC
+        // -----------------------------
+        exportBtn.addEventListener('click', function() {
+            if (records.length === 0) {
+                showMessage('No records to export!', 'error');
+                return;
+            }
+
+            // Create a clean array of objects for the Excel sheet
+            const dataToExport = records.map(rec => ({
+                "RECIEPT NO": rec.number,
+                "MONTH": rec.date,
+                "REP": rec.rep || "",
+                "REASON": rec.reason
+            }));
+
+            // Convert data to a worksheet
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            
+            // Create a new workbook and append the worksheet
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Records");
+
+            // Generate filename with current date (e.g., Records_2026-08-13.xlsx)
+            const dateStr = new Date().toISOString().split('T')[0];
+            const fileName = `Records_${dateStr}.xlsx`;
+
+            // Trigger the download
+            XLSX.writeFile(workbook, fileName);
+            
+            showMessage(`Exported ${records.length} records successfully!`, 'success');
+        });
 
         // -----------------------------
         // EXCEL IMPORT LOGIC
@@ -236,19 +287,16 @@
                     if (dateKey && row[dateKey]) {
                         const d = row[dateKey];
                         if (d instanceof Date && !isNaN(d)) {
-                            // Extract just Year and Month
                             const year = d.getFullYear();
                             const month = String(d.getMonth() + 1).padStart(2, '0');
                             date = `${year}-${month}`;
                         } else {
-                            // Handle string dates like "2026/2" or "2026-02"
                             let rawDate = String(d).trim();
                             let parts = rawDate.split(/[-/]/);
                             
-                            // If the string starts with a 4-digit year and has a month part
                             if (parts.length >= 2 && parts[0].length === 4) {
                                 let year = parts[0];
-                                let month = parts[1].padStart(2, '0'); // Forces "2" to become "02"
+                                let month = parts[1].padStart(2, '0');
                                 date = `${year}-${month}`;
                             } else {
                                 date = rawDate;
@@ -337,7 +385,7 @@
 
             const idInput = document.getElementById('editId').value;
             const num = document.getElementById('numInput').value.trim();
-            const date = document.getElementById('dateInput').value; // Now returns YYYY-MM
+            const date = document.getElementById('dateInput').value; 
             const rep = document.getElementById('repInput').value.trim();
             const reason = document.getElementById('reasonInput').value.trim();
 
@@ -388,7 +436,6 @@
             document.getElementById('editId').value = record.id;
             document.getElementById('numInput').value = record.number;
             
-            // Format existing date to YYYY-MM in case older records have YYYY-MM-DD
             let dVal = record.date || '';
             if (dVal.length >= 7 && dVal.includes('-')) {
                 dVal = dVal.substring(0, 7); 
