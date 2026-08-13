@@ -13,7 +13,7 @@
             font-family: system-ui, -apple-system, sans-serif;
             background-color: #f4f4f9;
             color: #333;
-            max-width: 1000px; /* Slightly widened to fit the new column comfortably */
+            max-width: 1000px; 
             margin: 2rem auto;
             padding: 0 1rem;
         }
@@ -216,8 +216,14 @@
                 jsonData.forEach(row => {
                     const keys = Object.keys(row);
                     
-                    // Identify columns dynamically
-                    const numKey = keys.find(k => k.toLowerCase().includes('receipt') || k.toLowerCase().includes('number') || k.toLowerCase() === 'no');
+                    // FIXED: Now accurately captures both "receipt" and "reciept"
+                    const numKey = keys.find(k => 
+                        k.toLowerCase().includes('receipt') || 
+                        k.toLowerCase().includes('reciept') || 
+                        k.toLowerCase().includes('number') || 
+                        k.toLowerCase() === 'no'
+                    );
+                    
                     const dateKey = keys.find(k => k.toLowerCase().includes('date'));
                     const repKey = keys.find(k => k.toLowerCase().includes('rep'));
                     const reasonKey = keys.find(k => k.toLowerCase().includes('reason') || k.toLowerCase().includes('desc'));
@@ -239,7 +245,8 @@
                         }
                     }
 
-                    if (num) {
+                    // Only add if there is an actual receipt number (skips blank rows)
+                    if (num && num !== 'undefined' && num !== 'null') {
                         const exists = records.find(r => String(r.number).toLowerCase() === num.toLowerCase());
                         if (!exists) {
                             records.unshift({
@@ -264,7 +271,7 @@
                 if (addedCount > 0) {
                     showMessage(`Import successful! Added ${addedCount} new records. (Skipped ${skippedCount} duplicates)`, 'success');
                 } else {
-                    showMessage(`No new records added. All ${skippedCount} entries were already in the system.`, 'error');
+                    showMessage(`No new records added. All ${skippedCount} valid entries were already in the system.`, 'error');
                 }
             };
 
