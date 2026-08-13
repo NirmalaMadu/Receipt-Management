@@ -90,14 +90,6 @@
             border: 2px solid #3498db;
             min-width: 200px;
         }
-        .toolbar select {
-            padding: 0.8rem;
-            border: 2px solid #3498db;
-            border-radius: 4px;
-            font-size: 1rem;
-            background: white;
-            min-width: 150px;
-        }
         .btn-import {
             background-color: #27ae60;
             color: white;
@@ -137,6 +129,20 @@
         th {
             background-color: #2c3e50;
             color: white;
+            vertical-align: top;
+        }
+        /* Styling for the dropdowns inside the table headers */
+        th select {
+            width: 100%;
+            margin-top: 8px;
+            padding: 6px;
+            border-radius: 4px;
+            border: none;
+            color: #333;
+            font-family: inherit;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            cursor: pointer;
         }
         .date-group-header {
             background-color: #ecf0f1;
@@ -144,6 +150,10 @@
             font-weight: bold;
             letter-spacing: 1px;
             text-transform: uppercase;
+        }
+        .date-group-header td {
+            padding: 8px 12px;
+            font-size: 0.9rem;
         }
         #messageBox {
             padding: 10px;
@@ -189,15 +199,6 @@
 
         <div class="toolbar">
             <input type="text" id="searchInput" placeholder="Search any text..." autocomplete="off">
-            
-            <!-- New Dropdown Filters -->
-            <select id="filterRep">
-                <option value="">All Reps</option>
-            </select>
-            <select id="filterReason">
-                <option value="">All Reasons</option>
-            </select>
-
             <label for="excelUpload" class="btn-import">📥 Import Excel</label>
             <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" style="display: none;">
             <button class="btn-export" id="exportBtn">📤 Export Excel</button>
@@ -208,8 +209,20 @@
                 <tr>
                     <th>RECIEPT NO</th>
                     <th>MONTH</th>
-                    <th>REP</th>
-                    <th>REASON</th>
+                    <th>
+                        REP
+                        <!-- Filter moved to column -->
+                        <select id="filterRep">
+                            <option value="">All Reps</option>
+                        </select>
+                    </th>
+                    <th>
+                        REASON
+                        <!-- Filter moved to column -->
+                        <select id="filterReason">
+                            <option value="">All Reasons</option>
+                        </select>
+                    </th>
                     <th style="width: 150px;">Actions</th>
                 </tr>
             </thead>
@@ -221,6 +234,31 @@
 
     <script>
         let records = JSON.parse(localStorage.getItem('myRecords')) || [];
+
+        // Helper to get local YYYY-MM-DD
+        function getLocalYYYYMMDD(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        const todayStr = getLocalYYYYMMDD(new Date());
+        const yestObj = new Date();
+        yestObj.setDate(yestObj.getDate() - 1);
+        const yestStr = getLocalYYYYMMDD(yestObj);
+
+        // One-time migration: Ensure all old records have an 'entryDate' based on when they were created
+        records = records.map(r => {
+            if (!r.entryDate) {
+                // We used Date.now() + Math.random() for IDs previously, so we can extract the exact creation timestamp
+                let ts = Math.floor(r.id);
+                if (ts < 1000000000000) ts = Date.now(); // Fallback
+                r.entryDate = getLocalYYYYMMDD(new Date(ts));
+            }
+            return r;
+        });
+        localStorage.setItem('myRecords', JSON.stringify(records));
 
         const form = document.getElementById('recordForm');
         const tbody = document.querySelector('#dataTable tbody');
@@ -244,11 +282,9 @@
             const uniqueReps = [...new Set(records.map(r => r.rep).filter(val => val.trim() !== ''))].sort();
             const uniqueReasons = [...new Set(records.map(r => r.reason).filter(val => val.trim() !== ''))].sort();
 
-            // 1. Update DataLists (Auto-complete for typing)
             document.getElementById('repSuggestions').innerHTML = uniqueReps.map(r => `<option value="${r}">`).join('');
             document.getElementById('reasonSuggestions').innerHTML = uniqueReasons.map(r => `<option value="${r}">`).join('');
 
-            // 2. Update Dropdown Filters (Saving current selections)
             const currentRepSelection = filterRep.value;
             const currentReasonSelection = filterReason.value;
 
@@ -274,13 +310,11 @@
             const selectedReason = filterReason.value.toLowerCase();
 
             const filteredRecords = records.filter(rec => {
-                // Check Global Search
                 const matchesSearch = String(rec.number).toLowerCase().includes(searchTerm) ||
                                       String(rec.date).toLowerCase().includes(searchTerm) ||
                                       String(rec.rep || '').toLowerCase().includes(searchTerm) ||
                                       String(rec.reason).toLowerCase().includes(searchTerm);
                 
-                // Check Specific Dropdowns
                 const matchesRep = selectedRep === "" || String(rec.rep || '').toLowerCase() === selectedRep;
                 const matchesReason = selectedReason === "" || String(rec.reason).toLowerCase() === selectedReason;
 
@@ -290,11 +324,9 @@
             renderTable(filteredRecords);
         }
 
-        // Event listeners for real-time filtering
         searchInput.addEventListener('input', applyFilters);
         filterRep.addEventListener('change', applyFilters);
         filterReason.addEventListener('change', applyFilters);
-
 
         // -----------------------------
         // RENDERING & GROUPING LOGIC
@@ -307,26 +339,35 @@
                 return;
             }
 
-            // Sort data by Month/Year descending (Newest first)
+            // Sort data by the date it was ENTERED descending, then by ID descending to keep newest at top
             const sortedData = [...dataToRender].sort((a, b) => {
-                if (a.date > b.date) return -1;
-                if (a.date < b.date) return 1;
+                if (a.entryDate > b.entryDate) return -1;
+                if (a.entryDate < b.entryDate) return 1;
+                if (a.id > b.id) return -1;
+                if (a.id < b.id) return 1;
                 return 0;
             });
 
-            let currentDateGroup = null;
+            let currentGroup = null;
 
             sortedData.forEach(rec => {
-                // If the month changes, insert a grouped header row
-                if (rec.date !== currentDateGroup) {
-                    currentDateGroup = rec.date;
+                // Check if the Entry Date changed to render a new header row
+                if (rec.entryDate !== currentGroup) {
+                    currentGroup = rec.entryDate;
+                    
+                    let groupLabel = currentGroup;
+                    if (currentGroup === todayStr) {
+                        groupLabel = "Today";
+                    } else if (currentGroup === yestStr) {
+                        groupLabel = "Yesterday";
+                    }
+
                     const headerRow = document.createElement('tr');
                     headerRow.className = 'date-group-header';
-                    headerRow.innerHTML = `<td colspan="5">🗓️ MONTH: ${currentDateGroup}</td>`;
+                    headerRow.innerHTML = `<td colspan="5">⏱️ Entered on: ${groupLabel}</td>`;
                     tbody.appendChild(headerRow);
                 }
 
-                // Insert the actual record row
                 const tr = document.createElement('tr');
                 tr.id = 'row-' + rec.number;
                 tr.innerHTML = `
@@ -357,15 +398,15 @@
                 "RECIEPT NO": rec.number,
                 "MONTH": rec.date,
                 "REP": rec.rep || "",
-                "REASON": rec.reason
+                "REASON": rec.reason,
+                "ENTERED DATE": rec.entryDate
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Records");
 
-            const dateStr = new Date().toISOString().split('T')[0];
-            const fileName = `Records_${dateStr}.xlsx`;
+            const fileName = `Records_${todayStr}.xlsx`;
             XLSX.writeFile(workbook, fileName);
             showMessage(`Exported ${records.length} records successfully!`, 'success');
         });
@@ -422,7 +463,14 @@
                     if (num && num !== 'undefined' && num !== 'null') {
                         const exists = records.find(r => String(r.number).toLowerCase() === num.toLowerCase());
                         if (!exists) {
-                            records.push({ id: Date.now() + Math.random(), number: num, date: date, rep: rep, reason: reason });
+                            records.push({ 
+                                id: Date.now() + Math.random(), 
+                                number: num, 
+                                date: date, 
+                                rep: rep, 
+                                reason: reason,
+                                entryDate: todayStr // Tags imported files as added "Today"
+                            });
                             addedCount++;
                         } else { skippedCount++; }
                     }
@@ -457,7 +505,6 @@
             if (existingRecord && existingRecord.id.toString() !== idInput) {
                 showMessage(`Receipt No "${num}" was already entered! Redirecting to record...`, 'error');
                 
-                // Clear filters so the user can actually see the duplicate record row
                 searchInput.value = ''; 
                 filterRep.value = '';
                 filterReason.value = '';
@@ -469,10 +516,12 @@
 
             if (idInput) {
                 const index = records.findIndex(r => r.id.toString() === idInput);
-                records[index] = { id: Number(idInput), number: num, date: date, rep: rep, reason: reason };
+                // Maintain the original entry date when updating
+                const originalEntryDate = records[index].entryDate;
+                records[index] = { id: Number(idInput), number: num, date: date, rep: rep, reason: reason, entryDate: originalEntryDate };
                 showMessage('Record updated successfully!', 'success');
             } else {
-                records.push({ id: Date.now(), number: num, date: date, rep: rep, reason: reason });
+                records.push({ id: Date.now(), number: num, date: date, rep: rep, reason: reason, entryDate: todayStr });
                 showMessage('Record saved successfully!', 'success');
             }
 
