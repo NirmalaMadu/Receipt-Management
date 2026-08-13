@@ -33,7 +33,7 @@
             margin-bottom: 1.5rem;
             flex-wrap: wrap;
         }
-        input[type="text"], input[type="date"] {
+        input[type="text"], input[type="month"] {
             padding: 0.5rem;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -145,7 +145,8 @@
             
             <div class="form-group">
                 <input type="text" id="numInput" placeholder="Receipt No" required autocomplete="off">
-                <input type="date" id="dateInput" required>
+                <!-- Changed to type="month" -->
+                <input type="month" id="dateInput" required>
                 <input type="text" id="repInput" placeholder="Representative" required autocomplete="off">
                 <input type="text" id="reasonInput" placeholder="Reason" required autocomplete="off">
                 <button type="submit" id="submitBtn">Save Record</button>
@@ -163,7 +164,7 @@
             <thead>
                 <tr>
                     <th>RECIEPT NO</th>
-                    <th>DATE</th>
+                    <th>MONTH</th>
                     <th>REP</th>
                     <th>REASON</th>
                     <th style="width: 150px;">Actions</th>
@@ -216,7 +217,6 @@
                 jsonData.forEach(row => {
                     const keys = Object.keys(row);
                     
-                    // FIXED: Now accurately captures both "receipt" and "reciept"
                     const numKey = keys.find(k => 
                         k.toLowerCase().includes('receipt') || 
                         k.toLowerCase().includes('reciept') || 
@@ -224,7 +224,7 @@
                         k.toLowerCase() === 'no'
                     );
                     
-                    const dateKey = keys.find(k => k.toLowerCase().includes('date'));
+                    const dateKey = keys.find(k => k.toLowerCase().includes('date') || k.toLowerCase().includes('month'));
                     const repKey = keys.find(k => k.toLowerCase().includes('rep'));
                     const reasonKey = keys.find(k => k.toLowerCase().includes('reason') || k.toLowerCase().includes('desc'));
 
@@ -236,16 +236,26 @@
                     if (dateKey && row[dateKey]) {
                         const d = row[dateKey];
                         if (d instanceof Date && !isNaN(d)) {
+                            // Extract just Year and Month
                             const year = d.getFullYear();
                             const month = String(d.getMonth() + 1).padStart(2, '0');
-                            const day = String(d.getDate()).padStart(2, '0');
-                            date = `${year}-${month}-${day}`;
+                            date = `${year}-${month}`;
                         } else {
-                            date = String(d).trim();
+                            // Handle string dates like "2026/2" or "2026-02"
+                            let rawDate = String(d).trim();
+                            let parts = rawDate.split(/[-/]/);
+                            
+                            // If the string starts with a 4-digit year and has a month part
+                            if (parts.length >= 2 && parts[0].length === 4) {
+                                let year = parts[0];
+                                let month = parts[1].padStart(2, '0'); // Forces "2" to become "02"
+                                date = `${year}-${month}`;
+                            } else {
+                                date = rawDate;
+                            }
                         }
                     }
 
-                    // Only add if there is an actual receipt number (skips blank rows)
                     if (num && num !== 'undefined' && num !== 'null') {
                         const exists = records.find(r => String(r.number).toLowerCase() === num.toLowerCase());
                         if (!exists) {
@@ -327,7 +337,7 @@
 
             const idInput = document.getElementById('editId').value;
             const num = document.getElementById('numInput').value.trim();
-            const date = document.getElementById('dateInput').value;
+            const date = document.getElementById('dateInput').value; // Now returns YYYY-MM
             const rep = document.getElementById('repInput').value.trim();
             const reason = document.getElementById('reasonInput').value.trim();
 
@@ -377,7 +387,14 @@
 
             document.getElementById('editId').value = record.id;
             document.getElementById('numInput').value = record.number;
-            document.getElementById('dateInput').value = record.date;
+            
+            // Format existing date to YYYY-MM in case older records have YYYY-MM-DD
+            let dVal = record.date || '';
+            if (dVal.length >= 7 && dVal.includes('-')) {
+                dVal = dVal.substring(0, 7); 
+            }
+            document.getElementById('dateInput').value = dVal;
+            
             document.getElementById('repInput').value = record.rep || '';
             document.getElementById('reasonInput').value = record.reason;
 
