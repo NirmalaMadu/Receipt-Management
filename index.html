@@ -59,6 +59,7 @@
 
         <form id="recordForm">
             <input type="hidden" id="editId">
+            
             <div class="form-group">
                 <input type="text" id="numInput" placeholder="Receipt No" required autocomplete="off">
                 <input type="month" id="dateInput" required>
@@ -83,11 +84,15 @@
                     <th>MONTH</th>
                     <th>
                         REP
-                        <select id="filterRep"><option value="">All Reps</option></select>
+                        <select id="filterRep">
+                            <option value="">All Reps</option>
+                        </select>
                     </th>
                     <th>
                         REASON
-                        <select id="filterReason"><option value="">All Reasons</option></select>
+                        <select id="filterReason">
+                            <option value="">All Reasons</option>
+                        </select>
                     </th>
                     <th style="width: 150px;">Actions</th>
                 </tr>
@@ -107,7 +112,6 @@
 
         let records = JSON.parse(localStorage.getItem('myRecords')) || [];
 
-        // Helper to get local YYYY-MM-DD
         function getLocalYYYYMMDD(dateObj) {
             const y = dateObj.getFullYear();
             const m = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -120,7 +124,6 @@
         yestObj.setDate(yestObj.getDate() - 1);
         const yestStr = getLocalYYYYMMDD(yestObj);
 
-        // DATA CLEANER: Finds messy text and gracefully cleans it locally
         records = records.map(r => {
             if (r.date && (r.date.includes('GMT') || r.date.includes('('))) {
                 let cleanStr = r.date.replace(/\(.*?\)/g, '').trim(); 
@@ -143,9 +146,11 @@
         const form = document.getElementById('recordForm');
         const tbody = document.querySelector('#dataTable tbody');
         const messageBox = document.getElementById('messageBox');
+        
         const searchInput = document.getElementById('searchInput');
         const filterRep = document.getElementById('filterRep');
         const filterReason = document.getElementById('filterReason');
+        
         const excelUpload = document.getElementById('excelUpload');
         const exportBtn = document.getElementById('exportBtn');
         
@@ -279,7 +284,7 @@
         filterReason.addEventListener('change', applyFilters);
 
         // -----------------------------
-        // RENDERING & GROUPING LOGIC (NEW SORTING)
+        // RENDERING & GROUPING LOGIC (STRICT TIMESTAMP SORTING)
         // -----------------------------
         function renderTable(dataToRender) {
             tbody.innerHTML = '';
@@ -289,25 +294,18 @@
                 return;
             }
 
-            // STRICT NUMERICAL CALENDAR SORTING - Forces newest lines perfectly to the top
             const sortedData = [...dataToRender].sort((a, b) => {
-                // 1. Sort by Entry Date (Newest at the top)
-                const timeA = new Date(a.entryDate).getTime() || 0;
-                const timeB = new Date(b.entryDate).getTime() || 0;
-                if (timeA !== timeB) return timeB - timeA;
+                // 1. Sort by Entry Date (Groups Today above Yesterday)
+                let dateA = a.entryDate || "";
+                let dateB = b.entryDate || "";
+                if (dateA > dateB) return -1;
+                if (dateA < dateB) return 1;
 
-                // 2. Sort by Receipt Month (Newest month at the top)
-                const monthA = new Date(a.date).getTime() || 0;
-                const monthB = new Date(b.date).getTime() || 0;
-                if (monthA !== monthB) return monthB - monthA;
-
-                // 3. Sort by Receipt Number (Highest number at the top)
-                const numA = Number(a.number) || 0;
-                const numB = Number(b.number) || 0;
-                if (numA !== numB) return numB - numA;
-
-                // 4. Fallback to ID
-                return Number(b.id) - Number(a.id);
+                // 2. Strict ID sort (The exact millisecond the save button was clicked - newest at top)
+                if (Number(a.id) > Number(b.id)) return -1;
+                if (Number(a.id) < Number(b.id)) return 1;
+                
+                return 0;
             });
 
             let currentGroup = null;
@@ -317,8 +315,11 @@
                     currentGroup = rec.entryDate;
                     
                     let groupLabel = currentGroup;
-                    if (currentGroup === todayStr) groupLabel = "Today";
-                    else if (currentGroup === yestStr) groupLabel = "Yesterday";
+                    if (currentGroup === todayStr) {
+                        groupLabel = "Today";
+                    } else if (currentGroup === yestStr) {
+                        groupLabel = "Yesterday";
+                    }
 
                     const headerRow = document.createElement('tr');
                     headerRow.className = 'date-group-header';
@@ -346,10 +347,15 @@
         // EXCEL IMPORT / EXPORT LOGIC
         // -----------------------------
         exportBtn.addEventListener('click', function() {
-            if (records.length === 0) return showMessage('No records to export!', 'error');
+            if (records.length === 0) {
+                showMessage('No records to export!', 'error');
+                return;
+            }
+
             const dataToExport = records.map(rec => ({
                 "RECIEPT NO": rec.number, "MONTH": rec.date, "REP": rec.rep || "", "REASON": rec.reason, "ENTERED DATE": rec.entryDate
             }));
+
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Records");
@@ -367,9 +373,13 @@
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                 const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
 
-                if (jsonData.length === 0) return showMessage('Empty file.', 'error');
+                if (jsonData.length === 0) {
+                    showMessage('The uploaded file appears to be empty.', 'error');
+                    excelUpload.value = ''; return;
+                }
 
-                let addedCount = 0; let newRecordsToCloud = [];
+                let addedCount = 0; let skippedCount = 0;
+                let newRecordsToCloud = [];
 
                 jsonData.forEach(row => {
                     const keys = Object.keys(row);
@@ -389,21 +399,29 @@
                             date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                         } else {
                             let parts = String(d).trim().split(/[-/]/);
-                            date = (parts.length >= 2 && parts[0].length === 4) ? `${parts[0]}-${parts[1].padStart(2, '0')}` : String(d).trim();
+                            if (parts.length >= 2 && parts[0].length === 4) {
+                                date = `${parts[0]}-${parts[1].padStart(2, '0')}`;
+                            } else {
+                                date = String(d).trim();
+                            }
                         }
                     }
 
                     if (num && num !== 'undefined' && num !== 'null') {
                         const exists = records.find(r => String(r.number).toLowerCase() === num.toLowerCase());
                         if (!exists) {
-                            const newRec = { id: Date.now() + Math.random(), number: num, date: date, rep: rep, reason: reason, entryDate: todayStr };
+                            const newRec = { 
+                                id: Date.now() + Math.random(), 
+                                number: num, date: date, rep: rep, reason: reason, entryDate: todayStr 
+                            };
                             records.push(newRec); newRecordsToCloud.push(newRec); addedCount++;
-                        }
+                        } else { skippedCount++; }
                     }
                 });
 
                 saveData();
                 if (newRecordsToCloud.length > 0) sendToCloud({ action: 'bulk_add', records: newRecordsToCloud });
+
                 updateSuggestionsAndFilters(); applyFilters(); excelUpload.value = ''; 
                 if (addedCount > 0) showMessage(`Import successful! Added ${addedCount} new records.`, 'success');
                 else showMessage(`No new records added. Skipped duplicates.`, 'error');
@@ -416,6 +434,7 @@
         // -----------------------------
         form.addEventListener('submit', function(e) {
             e.preventDefault();
+
             const idInput = document.getElementById('editId').value;
             const num = document.getElementById('numInput').value.trim();
             const date = document.getElementById('dateInput').value; 
@@ -432,7 +451,8 @@
 
             if (idInput) {
                 const index = records.findIndex(r => r.id.toString() === idInput);
-                const updatedRecord = { id: Number(idInput), number: num, date: date, rep: rep, reason: reason, entryDate: records[index].entryDate };
+                const originalEntryDate = records[index].entryDate;
+                const updatedRecord = { id: Number(idInput), number: num, date: date, rep: rep, reason: reason, entryDate: originalEntryDate };
                 records[index] = updatedRecord;
                 sendToCloud({ action: 'edit', ...updatedRecord });
                 showMessage('Record updated successfully!', 'success');
@@ -442,6 +462,7 @@
                 sendToCloud({ action: 'add', ...newRecord });
                 showMessage('Record saved successfully!', 'success');
             }
+
             saveData(); updateSuggestionsAndFilters(); applyFilters(); cancelEdit();
         });
 
@@ -456,6 +477,7 @@
         function editRecord(id) {
             const record = records.find(r => r.id === id);
             if (!record) return;
+
             document.getElementById('editId').value = record.id;
             document.getElementById('numInput').value = record.number;
             let dVal = record.date || '';
@@ -463,6 +485,7 @@
             document.getElementById('dateInput').value = dVal;
             document.getElementById('repInput').value = record.rep || '';
             document.getElementById('reasonInput').value = record.reason;
+
             document.getElementById('submitBtn').textContent = 'Update Record';
             document.getElementById('cancelBtn').style.display = 'inline-block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
