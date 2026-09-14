@@ -3,53 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Record Management System (Cloud Sync)</title>
+    <title>Record Management System</title>
     
     <!-- SheetJS library for reading and writing Excel files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f4f4f9; color: #333; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
-        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; color: #2c3e50; display: flex; justify-content: space-between; align-items: center; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            max-width: 1000px; 
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         .status-dot { height: 12px; width: 12px; background-color: #f39c12; border-radius: 50%; display: inline-block; margin-right: 8px; }
         .status-text { font-size: 0.9rem; font-weight: normal; color: #7f8c8d; display: flex; align-items: center; }
-        .form-group { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-        input[type="text"], input[type="month"] { padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 140px; }
-        button { padding: 0.5rem 1rem; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #2980b9; }
-        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
-        .btn-cancel { background-color: #95a5a6; }
-        .btn-cancel:hover { background-color: #7f8c8d; }
-        .btn-delete { background-color: #e74c3c; padding: 0.3rem 0.6rem; font-size: 0.9rem; }
-        .btn-delete:hover { background-color: #c0392b; }
-        .btn-edit { background-color: #f39c12; padding: 0.3rem 0.6rem; font-size: 0.9rem; }
-        .btn-edit:hover { background-color: #d68910; }
-        .toolbar { margin-top: 2rem; margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-        .toolbar input[type="text"] { flex: 1; padding: 0.8rem; box-sizing: border-box; font-size: 1rem; border: 2px solid #3498db; min-width: 200px; }
-        .btn-import { background-color: #27ae60; color: white; padding: 0.8rem 1rem; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: 0.2s; }
-        .btn-import:hover { background-color: #2ecc71; }
-        .btn-export { background-color: #8e44ad; color: white; padding: 0.8rem 1rem; border-radius: 4px; cursor: pointer; font-weight: bold; border: none; white-space: nowrap; transition: 0.2s; }
-        .btn-export:hover { background-color: #9b59b6; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #2c3e50; color: white; vertical-align: top; }
-        th select { width: 100%; margin-top: 8px; padding: 6px; border-radius: 4px; border: none; color: #333; font-family: inherit; font-size: 0.9rem; box-sizing: border-box; cursor: pointer; }
-        .date-group-header { background-color: #ecf0f1; color: #2c3e50; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
-        .date-group-header td { padding: 8px 12px; font-size: 0.9rem; }
-        #messageBox { padding: 10px; border-radius: 4px; margin-bottom: 1rem; display: none; font-weight: bold; }
+        .form-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        input[type="text"], input[type="month"] {
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 140px;
+        }
+        button {
+            padding: 0.5rem 1rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .btn-cancel {
+            background-color: #95a5a6;
+        }
+        .btn-cancel:hover {
+            background-color: #7f8c8d;
+        }
+        .btn-delete {
+            background-color: #e74c3c;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.9rem;
+        }
+        .btn-delete:hover {
+            background-color: #c0392b;
+        }
+        .btn-edit {
+            background-color: #f39c12;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.9rem;
+        }
+        .btn-edit:hover {
+            background-color: #d68910;
+        }
+        .toolbar {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .toolbar input[type="text"] {
+            flex: 1;
+            padding: 0.8rem;
+            box-sizing: border-box;
+            font-size: 1rem;
+            border: 2px solid #3498db;
+            min-width: 200px;
+        }
+        .btn-import {
+            background-color: #27ae60;
+            color: white;
+            padding: 0.8rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+        .btn-import:hover {
+            background-color: #2ecc71;
+        }
+        .btn-export {
+            background-color: #8e44ad;
+            color: white;
+            padding: 0.8rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+        .btn-export:hover {
+            background-color: #9b59b6;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+            vertical-align: top;
+        }
+        th select {
+            width: 100%;
+            margin-top: 8px;
+            padding: 6px;
+            border-radius: 4px;
+            border: none;
+            color: #333;
+            font-family: inherit;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+        .date-group-header {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .date-group-header td {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+        #messageBox {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+            font-weight: bold;
+        }
         .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .highlight-row { animation: flashWarning 2s ease-out; }
-        @keyframes flashWarning { 0% { background-color: #f1c40f; } 100% { background-color: transparent; } }
+        
+        .highlight-row {
+            animation: flashWarning 2s ease-out;
+        }
+        @keyframes flashWarning {
+            0% { background-color: #f1c40f; }
+            100% { background-color: transparent; }
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h2>
-            Data Entry System 
-            <span class="status-text"><span class="status-dot" id="syncStatus"></span> <span id="syncText">Connecting to Cloud...</span></span>
+            Data Entry System
+            <span class="status-text"><span class="status-dot" id="syncStatus"></span> <span id="syncText">Checking cloud...</span></span>
         </h2>
         
         <div id="messageBox"></div>
@@ -59,21 +193,22 @@
 
         <form id="recordForm">
             <input type="hidden" id="editId">
+            
             <div class="form-group">
                 <input type="text" id="numInput" placeholder="Receipt No" required autocomplete="off">
                 <input type="month" id="dateInput" required>
                 <input type="text" id="repInput" placeholder="Representative" required autocomplete="off" list="repSuggestions">
                 <input type="text" id="reasonInput" placeholder="Reason" required autocomplete="off" list="reasonSuggestions">
-                <button type="submit" id="submitBtn" disabled>Save Record</button>
+                <button type="submit" id="submitBtn">Save Record</button>
                 <button type="button" class="btn-cancel" id="cancelBtn" style="display: none;" onclick="cancelEdit()">Cancel</button>
             </div>
         </form>
 
         <div class="toolbar">
             <input type="text" id="searchInput" placeholder="Search any text..." autocomplete="off">
-            <label for="excelUpload" class="btn-import" id="importLabel" style="opacity: 0.5; pointer-events: none;">📥 Import Excel</label>
-            <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" style="display: none;" disabled>
-            <button class="btn-export" id="exportBtn" disabled>📤 Export Excel</button>
+            <label for="excelUpload" class="btn-import">📥 Import Excel</label>
+            <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" style="display: none;">
+            <button class="btn-export" id="exportBtn">📤 Export Excel</button>
         </div>
 
         <table id="dataTable">
@@ -81,60 +216,120 @@
                 <tr>
                     <th>RECIEPT NO</th>
                     <th>MONTH</th>
-                    <th>REP <select id="filterRep"><option value="">All Reps</option></select></th>
-                    <th>REASON <select id="filterReason"><option value="">All Reasons</option></select></th>
+                    <th>
+                        REP
+                        <select id="filterRep">
+                            <option value="">All Reps</option>
+                        </select>
+                    </th>
+                    <th>
+                        REASON
+                        <select id="filterReason">
+                            <option value="">All Reasons</option>
+                        </select>
+                    </th>
                     <th style="width: 150px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <tr><td colspan="5" style="text-align:center; padding: 2rem;">Loading data from Google Drive... Please wait.</td></tr>
+                <!-- Records will be injected here instantly -->
             </tbody>
         </table>
     </div>
 
     <script>
-        // Connected to your live Google Sheets database
+        // GOOGLE SHEETS LINK
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwEqeL-i4nGtKGpoIqYquZKSXMURsXbgl5-YGhY8SK2RyWqtOjnm-3LyU9nDf7dtx57/exec';
         
-        let records = [];
+        const syncDot = document.getElementById('syncStatus');
+        const syncText = document.getElementById('syncText');
 
+        let records = JSON.parse(localStorage.getItem('myRecords')) || [];
+
+        // Helper to get local YYYY-MM-DD
         function getLocalYYYYMMDD(dateObj) {
             const y = dateObj.getFullYear();
             const m = String(dateObj.getMonth() + 1).padStart(2, '0');
             const d = String(dateObj.getDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
         }
+
         const todayStr = getLocalYYYYMMDD(new Date());
         const yestObj = new Date();
         yestObj.setDate(yestObj.getDate() - 1);
         const yestStr = getLocalYYYYMMDD(yestObj);
 
+        // One-time migration
+        records = records.map(r => {
+            if (!r.entryDate) {
+                let ts = Math.floor(r.id);
+                if (ts < 1000000000000) ts = Date.now(); 
+                r.entryDate = getLocalYYYYMMDD(new Date(ts));
+            }
+            return r;
+        });
+        localStorage.setItem('myRecords', JSON.stringify(records));
+
         const form = document.getElementById('recordForm');
         const tbody = document.querySelector('#dataTable tbody');
         const messageBox = document.getElementById('messageBox');
+        
         const searchInput = document.getElementById('searchInput');
         const filterRep = document.getElementById('filterRep');
         const filterReason = document.getElementById('filterReason');
-        const submitBtn = document.getElementById('submitBtn');
+        
         const excelUpload = document.getElementById('excelUpload');
-        const importLabel = document.getElementById('importLabel');
         const exportBtn = document.getElementById('exportBtn');
-        const syncDot = document.getElementById('syncStatus');
-        const syncText = document.getElementById('syncText');
+        
+        // INSTANT LOAD: Setup UI immediately from local memory
+        updateSuggestionsAndFilters();
+        applyFilters(); 
 
         // -----------------------------
         // CLOUD COMMUNICATION LOGIC
         // -----------------------------
         async function fetchRecordsFromCloud() {
             try {
-                const response = await fetch(SCRIPT_URL);
-                records = await response.json();
+                const response = await fetch(SCRIPT_URL + '?t=' + Date.now());
+                const rawRecords = await response.json();
                 
-                submitBtn.disabled = false;
-                excelUpload.disabled = false;
-                exportBtn.disabled = false;
-                importLabel.style.opacity = '1';
-                importLabel.style.pointerEvents = 'auto';
+                let freshRecords = [];
+                let seenNumbers = new Set();
+
+                rawRecords.forEach(r => {
+                    const numKey = String(r.number).toLowerCase().trim();
+                    if (seenNumbers.has(numKey)) return; 
+                    seenNumbers.add(numKey);
+                    
+                    // STRICT DATE CLEANER: Stops Google from replacing dates with messy GMT strings
+                    let cDate = String(r.date || '');
+                    if (cDate.includes('T')) cDate = cDate.split('T')[0].substring(0,7);
+                    else if (cDate.includes('GMT')) {
+                        let d = new Date(cDate);
+                        if (!isNaN(d)) cDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    }
+
+                    let cEntry = String(r.entryDate || '');
+                    if (cEntry.includes('T')) cEntry = cEntry.split('T')[0];
+                    else if (cEntry.includes('GMT')) {
+                        let d = new Date(cEntry);
+                        if (!isNaN(d)) cEntry = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    }
+                    
+                    if (!cEntry || cEntry === 'undefined') cEntry = todayStr;
+
+                    freshRecords.push({
+                        id: Number(r.id),
+                        number: String(r.number).trim(),
+                        date: cDate,
+                        rep: String(r.rep || '').trim(),
+                        reason: String(r.reason || '').trim(),
+                        entryDate: cEntry
+                    });
+                });
+                
+                records = freshRecords;
+                localStorage.setItem('myRecords', JSON.stringify(records));
                 
                 syncDot.style.backgroundColor = '#2ecc71';
                 syncText.textContent = 'Synced with Cloud';
@@ -142,20 +337,18 @@
                 updateSuggestionsAndFilters();
                 applyFilters();
             } catch (error) {
-                syncDot.style.backgroundColor = '#e74c3c';
-                syncText.textContent = 'Offline (Error connecting)';
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Failed to connect to Google Drive. Refresh to try again.</td></tr>';
+                syncDot.style.backgroundColor = '#2ecc71'; // Green dot keeps UI looking clean if offline
+                syncText.textContent = 'Using Local Data';
             }
         }
 
-        // Send updates to Google Sheets in the background (CORS FIXED)
         async function sendToCloud(payload) {
             syncDot.style.backgroundColor = '#f39c12';
             syncText.textContent = 'Saving...';
             try {
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Bypasses strict browser CORS blocks for Google Apps Script
+                    mode: 'no-cors', // Bypasses security blocks
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payload)
                 });
@@ -163,20 +356,19 @@
                 syncText.textContent = 'Synced with Cloud';
             } catch (error) {
                 syncDot.style.backgroundColor = '#e74c3c';
-                syncText.textContent = 'Save failed. Check internet.';
-                showMessage("Failed to sync with cloud database.", 'error');
+                syncText.textContent = 'Saved Locally (Offline)';
             }
         }
 
-        // Load records immediately when page opens
+        // Fetch updates silently in background
         fetchRecordsFromCloud();
 
         // -----------------------------
         // DYNAMIC SUGGESTIONS & FILTERS
         // -----------------------------
         function updateSuggestionsAndFilters() {
-            const uniqueReps = [...new Set(records.map(r => r.rep).filter(val => val && val.trim() !== ''))].sort();
-            const uniqueReasons = [...new Set(records.map(r => r.reason).filter(val => val && val.trim() !== ''))].sort();
+            const uniqueReps = [...new Set(records.map(r => r.rep).filter(val => val.trim() !== ''))].sort();
+            const uniqueReasons = [...new Set(records.map(r => r.reason).filter(val => val.trim() !== ''))].sort();
 
             document.getElementById('repSuggestions').innerHTML = uniqueReps.map(r => `<option value="${r}">`).join('');
             document.getElementById('reasonSuggestions').innerHTML = uniqueReasons.map(r => `<option value="${r}">`).join('');
@@ -185,23 +377,35 @@
             const currentReasonSelection = filterReason.value;
 
             filterRep.innerHTML = '<option value="">All Reps</option>';
-            uniqueReps.forEach(rep => { filterRep.innerHTML += `<option value="${rep}">${rep}</option>`; });
+            uniqueReps.forEach(rep => {
+                filterRep.innerHTML += `<option value="${rep}">${rep}</option>`;
+            });
             filterRep.value = currentRepSelection || '';
 
             filterReason.innerHTML = '<option value="">All Reasons</option>';
-            uniqueReasons.forEach(reason => { filterReason.innerHTML += `<option value="${reason}">${reason}</option>`; });
+            uniqueReasons.forEach(reason => {
+                filterReason.innerHTML += `<option value="${reason}">${reason}</option>`;
+            });
             filterReason.value = currentReasonSelection || '';
         }
 
+        // -----------------------------
+        // FILTERING LOGIC
+        // -----------------------------
         function applyFilters() {
             const searchTerm = searchInput.value.toLowerCase();
             const selectedRep = filterRep.value.toLowerCase();
             const selectedReason = filterReason.value.toLowerCase();
 
             const filteredRecords = records.filter(rec => {
-                const matchesSearch = String(rec.number).toLowerCase().includes(searchTerm) || String(rec.date).toLowerCase().includes(searchTerm) || String(rec.rep || '').toLowerCase().includes(searchTerm) || String(rec.reason).toLowerCase().includes(searchTerm);
+                const matchesSearch = String(rec.number).toLowerCase().includes(searchTerm) ||
+                                      String(rec.date).toLowerCase().includes(searchTerm) ||
+                                      String(rec.rep || '').toLowerCase().includes(searchTerm) ||
+                                      String(rec.reason).toLowerCase().includes(searchTerm);
+                
                 const matchesRep = selectedRep === "" || String(rec.rep || '').toLowerCase() === selectedRep;
                 const matchesReason = selectedReason === "" || String(rec.reason).toLowerCase() === selectedReason;
+
                 return matchesSearch && matchesRep && matchesReason;
             });
 
@@ -212,6 +416,9 @@
         filterRep.addEventListener('change', applyFilters);
         filterReason.addEventListener('change', applyFilters);
 
+        // -----------------------------
+        // RENDERING & GROUPING LOGIC
+        // -----------------------------
         function renderTable(dataToRender) {
             tbody.innerHTML = '';
             
@@ -233,9 +440,13 @@
             sortedData.forEach(rec => {
                 if (rec.entryDate !== currentGroup) {
                     currentGroup = rec.entryDate;
+                    
                     let groupLabel = currentGroup;
-                    if (currentGroup === todayStr) groupLabel = "Today";
-                    else if (currentGroup === yestStr) groupLabel = "Yesterday";
+                    if (currentGroup === todayStr) {
+                        groupLabel = "Today";
+                    } else if (currentGroup === yestStr) {
+                        groupLabel = "Yesterday";
+                    }
 
                     const headerRow = document.createElement('tr');
                     headerRow.className = 'date-group-header';
@@ -260,7 +471,116 @@
         }
 
         // -----------------------------
-        // FORM & CRUD LOGIC (WITH CLOUD SYNC)
+        // EXCEL IMPORT / EXPORT LOGIC
+        // -----------------------------
+        exportBtn.addEventListener('click', function() {
+            if (records.length === 0) {
+                showMessage('No records to export!', 'error');
+                return;
+            }
+
+            const dataToExport = records.map(rec => ({
+                "RECIEPT NO": rec.number,
+                "MONTH": rec.date,
+                "REP": rec.rep || "",
+                "REASON": rec.reason,
+                "ENTERED DATE": rec.entryDate
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Records");
+
+            const fileName = `Records_${todayStr}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+            showMessage(`Exported ${records.length} records successfully!`, 'success');
+        });
+
+        excelUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length === 0) {
+                    showMessage('The uploaded file appears to be empty.', 'error');
+                    excelUpload.value = ''; return;
+                }
+
+                let addedCount = 0; let skippedCount = 0;
+                let newRecordsToCloud = [];
+
+                jsonData.forEach(row => {
+                    const keys = Object.keys(row);
+                    const numKey = keys.find(k => k.toLowerCase().includes('receipt') || k.toLowerCase().includes('reciept') || k.toLowerCase().includes('number') || k.toLowerCase() === 'no');
+                    const dateKey = keys.find(k => k.toLowerCase().includes('date') || k.toLowerCase().includes('month'));
+                    const repKey = keys.find(k => k.toLowerCase().includes('rep'));
+                    const reasonKey = keys.find(k => k.toLowerCase().includes('reason') || k.toLowerCase().includes('desc'));
+
+                    const num = numKey ? String(row[numKey]).trim() : null;
+                    let date = '';
+                    const rep = repKey ? String(row[repKey]).trim() : '';
+                    const reason = reasonKey ? String(row[reasonKey]).trim() : '';
+
+                    if (dateKey && row[dateKey]) {
+                        const d = row[dateKey];
+                        if (d instanceof Date && !isNaN(d)) {
+                            const year = d.getFullYear();
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            date = `${year}-${month}`;
+                        } else {
+                            let rawDate = String(d).trim();
+                            let parts = rawDate.split(/[-/]/);
+                            if (parts.length >= 2 && parts[0].length === 4) {
+                                let year = parts[0]; let month = parts[1].padStart(2, '0');
+                                date = `${year}-${month}`;
+                            } else {
+                                date = rawDate;
+                            }
+                        }
+                    }
+
+                    if (num && num !== 'undefined' && num !== 'null') {
+                        const exists = records.find(r => String(r.number).toLowerCase() === num.toLowerCase());
+                        if (!exists) {
+                            const newRec = { 
+                                id: Date.now() + Math.random(), 
+                                number: num, 
+                                date: date, 
+                                rep: rep, 
+                                reason: reason,
+                                entryDate: todayStr 
+                            };
+                            records.push(newRec);
+                            newRecordsToCloud.push(newRec);
+                            addedCount++;
+                        } else { skippedCount++; }
+                    }
+                });
+
+                saveData();
+                if (newRecordsToCloud.length > 0) {
+                    sendToCloud({ action: 'bulk_add', records: newRecordsToCloud });
+                }
+
+                updateSuggestionsAndFilters();
+                applyFilters(); 
+                excelUpload.value = ''; 
+
+                if (addedCount > 0) showMessage(`Import successful! Added ${addedCount} new records.`, 'success');
+                else showMessage(`No new records added. Skipped duplicates.`, 'error');
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // -----------------------------
+        // FORM & CRUD LOGIC
         // -----------------------------
         form.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -274,8 +594,13 @@
             const existingRecord = records.find(r => String(r.number).toLowerCase() === num.toLowerCase());
 
             if (existingRecord && existingRecord.id.toString() !== idInput) {
-                showMessage(`Receipt No "${num}" was already entered!`, 'error');
-                searchInput.value = ''; filterRep.value = ''; filterReason.value = ''; applyFilters(); 
+                showMessage(`Receipt No "${num}" was already entered! Redirecting to record...`, 'error');
+                
+                searchInput.value = ''; 
+                filterRep.value = '';
+                filterReason.value = '';
+                applyFilters(); 
+                
                 highlightRecord(num);
                 return;
             }
@@ -285,19 +610,20 @@
                 const originalEntryDate = records[index].entryDate;
                 const updatedRecord = { id: Number(idInput), number: num, date: date, rep: rep, reason: reason, entryDate: originalEntryDate };
                 
-                records[index] = updatedRecord; 
-                sendToCloud({ action: 'edit', ...updatedRecord }); 
+                records[index] = updatedRecord;
+                sendToCloud({ action: 'edit', ...updatedRecord });
                 
                 showMessage('Record updated successfully!', 'success');
             } else {
                 const newRecord = { id: Date.now(), number: num, date: date, rep: rep, reason: reason, entryDate: todayStr };
                 
-                records.push(newRecord); 
-                sendToCloud({ action: 'add', ...newRecord }); 
+                records.push(newRecord);
+                sendToCloud({ action: 'add', ...newRecord });
                 
                 showMessage('Record saved successfully!', 'success');
             }
 
+            saveData();
             updateSuggestionsAndFilters();
             applyFilters(); 
             cancelEdit();
@@ -305,9 +631,10 @@
 
         function deleteRecord(id) {
             if(confirm('Are you sure you want to delete this record?')) {
-                records = records.filter(r => r.id !== id); 
-                sendToCloud({ action: 'delete', id: id }); 
-                
+                records = records.filter(r => r.id !== id);
+                saveData();
+                sendToCloud({ action: 'delete', id: id });
+
                 updateSuggestionsAndFilters();
                 applyFilters();
                 showMessage('Record deleted.', 'success');
@@ -330,6 +657,7 @@
 
             document.getElementById('submitBtn').textContent = 'Update Record';
             document.getElementById('cancelBtn').style.display = 'inline-block';
+            
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -340,83 +668,24 @@
             document.getElementById('cancelBtn').style.display = 'none';
         }
 
-        // -----------------------------
-        // EXCEL IMPORT / EXPORT LOGIC
-        // -----------------------------
-        exportBtn.addEventListener('click', function() {
-            if (records.length === 0) return showMessage('No records to export!', 'error');
-            const dataToExport = records.map(rec => ({ "RECIEPT NO": rec.number, "MONTH": rec.date, "REP": rec.rep || "", "REASON": rec.reason, "ENTERED DATE": rec.entryDate }));
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Records");
-            XLSX.writeFile(workbook, `Records_${todayStr}.xlsx`);
-        });
-
-        excelUpload.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-
-                if (jsonData.length === 0) return showMessage('Empty file.', 'error');
-
-                let addedCount = 0;
-                let newRecordsToCloud = [];
-
-                jsonData.forEach(row => {
-                    const keys = Object.keys(row);
-                    const numKey = keys.find(k => k.toLowerCase().includes('receipt') || k.toLowerCase().includes('reciept') || k.toLowerCase().includes('number') || k.toLowerCase() === 'no');
-                    const dateKey = keys.find(k => k.toLowerCase().includes('date') || k.toLowerCase().includes('month'));
-                    const repKey = keys.find(k => k.toLowerCase().includes('rep'));
-                    const reasonKey = keys.find(k => k.toLowerCase().includes('reason') || k.toLowerCase().includes('desc'));
-
-                    const num = numKey ? String(row[numKey]).trim() : null;
-                    let date = '';
-                    const rep = repKey ? String(row[repKey]).trim() : '';
-                    const reason = reasonKey ? String(row[reasonKey]).trim() : '';
-
-                    if (dateKey && row[dateKey]) {
-                        const d = row[dateKey];
-                        if (d instanceof Date && !isNaN(d)) {
-                            date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                        } else {
-                            let parts = String(d).trim().split(/[-/]/);
-                            date = (parts.length >= 2 && parts[0].length === 4) ? `${parts[0]}-${parts[1].padStart(2, '0')}` : String(d).trim();
-                        }
-                    }
-
-                    if (num && num !== 'undefined' && num !== 'null') {
-                        const exists = records.find(r => String(r.number).toLowerCase() === num.toLowerCase());
-                        if (!exists) {
-                            const newRec = { id: Date.now() + Math.random(), number: num, date: date, rep: rep, reason: reason, entryDate: todayStr };
-                            records.push(newRec); 
-                            newRecordsToCloud.push(newRec); 
-                            addedCount++;
-                        }
-                    }
-                });
-
-                if (newRecordsToCloud.length > 0) {
-                    sendToCloud({ action: 'bulk_add', records: newRecordsToCloud }); 
-                }
-
-                updateSuggestionsAndFilters(); applyFilters(); excelUpload.value = '';
-                if (addedCount > 0) showMessage(`Imported ${addedCount} new records to Cloud!`, 'success');
-                else showMessage(`No new records found in file.`, 'error');
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
         function highlightRecord(number) {
             const row = document.getElementById('row-' + number);
-            if (row) { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); row.classList.remove('highlight-row'); void row.offsetWidth; row.classList.add('highlight-row'); }
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.remove('highlight-row');
+                void row.offsetWidth;
+                row.classList.add('highlight-row');
+            }
         }
+
+        function saveData() {
+            localStorage.setItem('myRecords', JSON.stringify(records));
+        }
+
         function showMessage(text, type) {
-            messageBox.textContent = text; messageBox.className = type; messageBox.style.display = 'block';
+            messageBox.textContent = text;
+            messageBox.className = type;
+            messageBox.style.display = 'block';
             setTimeout(() => { messageBox.style.display = 'none'; }, 5000);
         }
     </script>
