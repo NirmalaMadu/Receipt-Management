@@ -130,7 +130,6 @@
                 const response = await fetch(SCRIPT_URL);
                 records = await response.json();
                 
-                // Enable inputs now that data is loaded
                 submitBtn.disabled = false;
                 excelUpload.disabled = false;
                 exportBtn.disabled = false;
@@ -149,13 +148,15 @@
             }
         }
 
-        // Send updates to Google Sheets in the background
+        // Send updates to Google Sheets in the background (CORS FIXED)
         async function sendToCloud(payload) {
             syncDot.style.backgroundColor = '#f39c12';
             syncText.textContent = 'Saving...';
             try {
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
+                    mode: 'no-cors', // This bypasses the strict browser security block
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify(payload)
                 });
                 syncDot.style.backgroundColor = '#2ecc71';
