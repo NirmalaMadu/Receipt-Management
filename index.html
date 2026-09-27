@@ -3,78 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Record Management System (Cloud Edition)</title>
+    <title>Receipt Management System</title>
+    <!-- SheetJS Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Futuristic Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f9f9f9; color: #333; }
-        h2 { text-align: center; margin-bottom: 5px; }
-        .sync-status { text-align: center; font-size: 14px; font-weight: bold; color: #d35400; min-height: 20px; margin-bottom: 15px; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .form-section, .filter-section, .import-section { display: flex; gap: 10px; margin-bottom: 20px; padding: 15px; background: #f1f5f9; border-radius: 5px; flex-wrap: wrap; align-items: center; }
-        .import-section { background: #e2e8f0; border: 1px dashed #cbd5e1; }
-        input, select, button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        input:not([type="file"]) { flex: 1; min-width: 140px; }
-        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; white-space: nowrap; }
-        button:hover { background-color: #0056b3; }
-        button.delete-btn { background-color: #dc3545; }
-        button.delete-btn:hover { background-color: #a71d2a; }
-        button.edit-btn { background-color: #ffc107; color: black; }
-        button.edit-btn:hover { background-color: #d39e00; }
-        button.import-btn { background-color: #28a745; }
-        button.import-btn:hover { background-color: #218838; }
-        button.export-btn { background-color: #17a2b8; }
-        button.export-btn:hover { background-color: #138496; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
-        th { background-color: #007bff; color: white; }
-        tr:hover:not(.date-header) { background-color: #f1f1f1; }
-        .date-header { background-color: #e2e8f0; font-weight: bold; color: #1e293b; font-size: 15px; border-top: 2px solid #cbd5e1; }
-        .date-header td { padding: 10px 15px; }
-        .highlight { background-color: #fff3cd !important; transition: background-color 0.5s ease; }
+        :root {
+            /* Dark Mode (Default) Variables */
+            --bg-color: #050914;
+            --panel-bg: rgba(12, 18, 34, 0.75);
+            --neon-cyan: #00f3ff;
+            --neon-blue: #0275d8;
+            --neon-green: #00ff66;
+            --neon-red: #ff2a2a;
+            --neon-yellow: #ffea00;
+            --text-main: #e0fbfc;
+            --text-muted: #5c7c99;
+            --border-color: #1c2e4a;
+            --input-bg: rgba(5, 9, 20, 0.8);
+            --grid-color: rgba(0, 243, 255, 0.03);
+            --header-bg: rgba(0, 243, 255, 0.05);
+            --date-bg: linear-gradient(90deg, rgba(0, 243, 255, 0.15) 0%, transparent 100%);
+            --highlight-bg: rgba(255, 234, 0, 0.1);
+        }
+
+        .light-mode {
+            /* Light Mode Variables - Cream Theme */
+            --bg-color: #fdf8ee; 
+            --panel-bg: rgba(255, 253, 247, 0.95); 
+            --neon-cyan: #007bff; 
+            --neon-blue: #0056b3;
+            --neon-green: #28a745;
+            --neon-red: #dc3545;
+            --neon-yellow: #d39e00; 
+            --text-main: #2b2b2b; 
+            --text-muted: #6c757d;
+            --border-color: #e2d5c4; 
+            --input-bg: #f5efe6; 
+            --grid-color: rgba(139, 115, 85, 0.08); 
+            --header-bg: rgba(0, 123, 255, 0.05);
+            --date-bg: linear-gradient(90deg, rgba(0, 123, 255, 0.08) 0%, transparent 100%);
+            --highlight-bg: rgba(255, 193, 7, 0.2);
+        }
+
+        body { 
+            font-family: 'Rajdhani', sans-serif; 
+            margin: 0; 
+            padding: 15px;
+            background-color: var(--bg-color); 
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: var(--text-main); 
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* Loading Screen Styles */
+        #loadingScreen {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+            transition: opacity 0.5s ease, background-color 0.4s ease;
+        }
+
+        .loading-title {
+            color: var(--neon-cyan); text-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+            text-transform: uppercase; letter-spacing: 6px; font-size: 42px; font-weight: 700; margin: 0 0 10px 0; text-align: center;
+        }
+
+        .loading-subtitle {
+            color: var(--text-main); text-transform: uppercase; letter-spacing: 4px; font-size: 20px; font-weight: 500; margin: 0; text-align: center;
+        }
+
+        .loading-bar { width: 400px; height: 3px; background: var(--border-color); margin-top: 40px; position: relative; overflow: hidden; border-radius: 2px; }
+        .loading-progress { width: 0%; height: 100%; background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); animation: loadAnim 3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        @keyframes loadAnim { 0% { width: 0%; } 50% { width: 60%; } 100% { width: 100%; } }
+
+        /* Main UI Container */
+        .container { 
+            max-width: 1100px; 
+            margin: 0 auto; 
+            background: var(--panel-bg); 
+            padding: 15px 20px; 
+            border-radius: 10px; 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); 
+            backdrop-filter: blur(10px);
+            transition: background-color 0.4s ease, border-color 0.4s ease;
+        }
+
+        /* Top Header Layout */
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        h2 { 
+            margin: 0; 
+            text-transform: uppercase; 
+            letter-spacing: 3px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+            font-weight: 700;
+            font-size: 26px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .sync-status { 
+            font-size: 14px; 
+            font-weight: 600; 
+            color: var(--neon-yellow); 
+            letter-spacing: 1px;
+            animation: pulseText 1.5s infinite;
+        }
+
+        @keyframes pulseText { 0% { opacity: 0.7; } 50% { opacity: 1; text-shadow: 0 0 8px var(--neon-yellow); } 100% { opacity: 0.7; } }
+
+        .theme-toggle-btn {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+        .theme-toggle-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+
+        /* Unified Compact Controls Box */
+        .controls-wrapper {
+            background: var(--header-bg);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--neon-cyan);
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: background-color 0.4s ease;
+        }
+
+        .input-row, .filter-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-row {
+            border-top: 1px dashed var(--border-color);
+            padding-top: 12px;
+        }
+
+        .import-export-group {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Inputs and Buttons */
+        input, select, button { 
+            padding: 8px 12px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 4px; 
+            font-size: 15px; 
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--input-bg);
+            color: var(--text-main);
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder { color: var(--text-muted); }
+        input:focus, select:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 8px rgba(0, 123, 255, 0.2); }
+
+        input:not([type="file"]) { flex: 1; min-width: 130px; }
+        
+        input[type="file"] { width: 180px; color: var(--text-muted); font-size: 13px; border: none; background: transparent; padding: 0; }
+        input[type="file"]::file-selector-button {
+            padding: 6px 12px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-family: 'Rajdhani'; transition: 0.3s; margin-right: 10px;
+        }
+        input[type="file"]::file-selector-button:hover { background: var(--neon-cyan); color: #fff; border-color: var(--neon-cyan); }
+
+        button { text-transform: uppercase; font-weight: 700; letter-spacing: 1px; cursor: pointer; border: 1px solid transparent; }
+
+        #submitBtn { background-color: transparent; border-color: var(--neon-cyan); color: var(--neon-cyan); }
+        #submitBtn:hover { background-color: var(--neon-cyan); color: #fff; box-shadow: 0 0 10px rgba(0, 123, 255, 0.4); }
+
+        #cancelBtn { background-color: transparent; border-color: var(--text-muted); color: var(--text-muted); }
+        #cancelBtn:hover { background-color: var(--text-muted); color: #fff; }
+
+        button.import-btn { background-color: transparent; border-color: var(--neon-green); color: var(--neon-green); }
+        button.import-btn:hover { background-color: var(--neon-green); color: #fff; box-shadow: 0 0 10px rgba(40, 167, 69, 0.4); }
+
+        button.export-btn { background-color: transparent; border-color: #a855f7; color: #a855f7; }
+        button.export-btn:hover { background-color: #a855f7; color: white; box-shadow: 0 0 10px rgba(168, 85, 247, 0.4); }
+
+        button.edit-btn { background-color: transparent; border-color: var(--neon-yellow); color: var(--neon-yellow); font-size: 13px; padding: 4px 10px; }
+        button.edit-btn:hover { background-color: var(--neon-yellow); color: #000; box-shadow: 0 0 8px rgba(255, 193, 7, 0.4); }
+
+        button.delete-btn { background-color: transparent; border-color: var(--neon-red); color: var(--neon-red); font-size: 13px; padding: 4px 10px; }
+        button.delete-btn:hover { background-color: var(--neon-red); color: white; box-shadow: 0 0 8px rgba(220, 53, 69, 0.4); }
+
+        button:disabled { border-color: var(--border-color) !important; color: var(--text-muted) !important; background: transparent !important; box-shadow: none !important; cursor: not-allowed; }
+
+        /* Compact Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 15px; }
+        
+        th { 
+            background-color: var(--header-bg); 
+            color: var(--neon-cyan); 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--neon-cyan);
+            font-size: 14px;
+        }
+        
+        tr { transition: background-color 0.2s; }
+        tr:hover:not(.date-header) { background-color: var(--header-bg); }
+        
+        .date-header { background: var(--date-bg); font-weight: 700; color: var(--text-main); font-size: 16px; border-top: none; }
+        .date-header td { padding: 8px 12px; border-left: 3px solid var(--neon-cyan); letter-spacing: 1px; }
+
+        .highlight { background-color: var(--highlight-bg) !important; outline: 1px solid var(--neon-yellow); transition: all 0.5s ease; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
     </style>
 </head>
 <body>
 
+<!-- LOADING SCREEN -->
+<div id="loadingScreen">
+    <h1 class="loading-title">Receipt Management System</h1>
+    <h3 class="loading-subtitle">W. A. Auto Supply (Pvt) Ltd</h3>
+    <div class="loading-bar"><div class="loading-progress"></div></div>
+</div>
+
 <div class="container">
-    <h2>Record Management System</h2>
     
-    <div id="syncStatus" class="sync-status"></div>
-
-    <div class="import-section">
-        <strong>Data Options:</strong>
-        <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
-        <button class="import-btn" onclick="importExcel()" id="importBtn">Import Excel</button>
-        <button class="export-btn" onclick="exportExcel()">Export to Excel</button>
+    <!-- Header with Title, Sync Status, and Theme Toggle -->
+    <div class="top-header">
+        <h2>Receipt Management System</h2>
+        <div class="header-controls">
+            <div id="syncStatus" class="sync-status"></div>
+            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">☀️ Light Mode</button>
+        </div>
     </div>
 
-    <!-- Input Form WITH Suggestions Links -->
-    <form class="form-section" id="recordForm">
-        <input type="number" id="numInput" placeholder="Enter Number" required>
+    <!-- Unified Controls Box (Inputs + Filters + Import/Export) -->
+    <div class="controls-wrapper">
         
-        <!-- Rep Name Input + Datalist -->
-        <input type="text" id="repInput" placeholder="Enter Rep Name" required list="repSuggestions" autocomplete="off">
-        <datalist id="repSuggestions"></datalist>
+        <!-- Row 1: Add Record Inputs -->
+        <form class="input-row" id="recordForm">
+            <input type="number" id="numInput" placeholder="Enter Number" required>
+            <input type="text" id="repInput" placeholder="Enter Rep Name" required list="repSuggestions" autocomplete="off">
+            <datalist id="repSuggestions"></datalist>
+            <input type="text" id="reasonInput" placeholder="Enter Reason" required list="reasonSuggestions" autocomplete="off">
+            <datalist id="reasonSuggestions"></datalist>
+            <button type="submit" id="submitBtn">Add Record</button>
+            <button type="button" id="cancelBtn" style="display:none;" onclick="cancelEdit()">Cancel</button>
+        </form>
 
-        <!-- Reason Input + Datalist -->
-        <input type="text" id="reasonInput" placeholder="Enter Reason" required list="reasonSuggestions" autocomplete="off">
-        <datalist id="reasonSuggestions"></datalist>
+        <!-- Row 2: Filters & File Actions -->
+        <div class="filter-row">
+            <input type="number" id="searchNum" placeholder="Search Number..." onkeyup="renderTable()">
+            <select id="filterRep" onchange="renderTable()"><option value="">All Rep Names</option></select>
+            <select id="filterReason" onchange="renderTable()"><option value="">All Reasons</option></select>
+            
+            <div class="import-export-group">
+                <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
+                <button class="import-btn" onclick="importExcel()" id="importBtn">Import</button>
+                <button class="export-btn" onclick="exportExcel()">Export</button>
+            </div>
+        </div>
 
-        <button type="submit" id="submitBtn">Add Record</button>
-        <button type="button" id="cancelBtn" style="display:none;" onclick="cancelEdit()">Cancel</button>
-    </form>
-
-    <div class="filter-section">
-        <strong>Search & Filter:</strong>
-        <input type="number" id="searchNum" placeholder="Search by Number..." onkeyup="renderTable()">
-        <select id="filterRep" onchange="renderTable()">
-            <option value="">All Rep Names</option>
-        </select>
-        <select id="filterReason" onchange="renderTable()">
-            <option value="">All Reasons</option>
-        </select>
     </div>
 
+    <!-- Data Table -->
     <table>
         <thead>
             <tr>
@@ -85,12 +315,41 @@
             </tr>
         </thead>
         <tbody id="tableBody">
-            <tr><td colspan="4" style="text-align:center;">Loading data from cloud... Please wait.</td></tr>
+            <tr><td colspan="4" style="text-align:center; color: var(--neon-cyan); letter-spacing: 1px; padding: 20px;">Loading data from cloud... Please wait.</td></tr>
         </tbody>
     </table>
 </div>
 
 <script>
+    // --- THEME TOGGLE LOGIC ---
+    if (localStorage.getItem('theme') === 'light') {
+        document.body.classList.add('light-mode');
+        document.getElementById('themeToggleBtn').innerHTML = '🌙 Dark Mode';
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const btn = document.getElementById('themeToggleBtn');
+        body.classList.toggle('light-mode');
+        
+        if (body.classList.contains('light-mode')) {
+            localStorage.setItem('theme', 'light');
+            btn.innerHTML = '🌙 Dark Mode';
+        } else {
+            localStorage.setItem('theme', 'dark');
+            btn.innerHTML = '☀️ Light Mode';
+        }
+    }
+
+    // --- LOADING SCREEN LOGIC ---
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const loader = document.getElementById('loadingScreen');
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500); 
+        }, 3000); 
+    });
+
     // --- YOUR CONNECTED GOOGLE SCRIPT URL ---
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4uwjSxZzYrVZjNglumyw1KFvFWRqR6WG8DlRxEkPI6BZ1CeZU3v1NkWk3SyB242rMyg/exec';
     
@@ -105,33 +364,28 @@
     const cancelBtn = document.getElementById('cancelBtn');
     const syncStatus = document.getElementById('syncStatus');
 
-    function showLoading(message) { syncStatus.innerHTML = `⏳ ${message}`; }
+    function showLoading(message) { syncStatus.innerHTML = message; }
     function hideLoading() { syncStatus.innerHTML = ``; }
 
     async function syncToCloud(action, recordData) {
-        showLoading(action === 'BULK_ADD' ? "Uploading batch to Database..." : "Syncing with Database...");
+        showLoading(action === 'BULK_ADD' ? "Uploading batch..." : "Syncing data...");
         try {
             await fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
+                method: 'POST', mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: action, record: recordData })
             });
-        } catch (error) {
-            console.error('Error syncing:', error);
-        }
+        } catch (error) { console.error('Error syncing:', error); }
         hideLoading();
     }
 
     async function loadData() {
-        showLoading("Downloading records from Cloud...");
+        showLoading("Downloading records...");
         try {
             const response = await fetch(SCRIPT_URL + "?t=" + new Date().getTime());
             const textData = await response.text();
             
-            if (textData.includes("<!DOCTYPE html>") || textData.includes("<html")) {
-                throw new Error("PERMISSION_DENIED");
-            }
+            if (textData.includes("<!DOCTYPE html>") || textData.includes("<html")) { throw new Error("PERMISSION_DENIED"); }
 
             const data = JSON.parse(textData);
             
@@ -139,11 +393,8 @@
                 const keys = Object.keys(row);
                 const findKey = (searchWord) => keys.find(k => k.toLowerCase().includes(searchWord.toLowerCase()));
                 
-                const numKey = findKey('num');
-                const repKey = findKey('rep') || findKey('name');
-                const reasonKey = findKey('reason');
-                const dateKey = findKey('date');
-                const idKey = findKey('id');
+                const numKey = findKey('num'); const repKey = findKey('rep') || findKey('name');
+                const reasonKey = findKey('reason'); const dateKey = findKey('date'); const idKey = findKey('id');
 
                 return {
                     id: idKey && row[idKey] ? String(row[idKey]) : (Date.now().toString() + Math.random().toString(36).substr(2, 5)),
@@ -154,11 +405,10 @@
                 };
             }).filter(r => r.number !== ""); 
 
-            updateFilters();
-            renderTable();
+            updateFilters(); renderTable();
         } catch (error) {
             console.error('Error loading data:', error);
-            document.getElementById('tableBody').innerHTML = `<tr><td colspan="4" style="text-align:center;">Failed to load data. Please refresh the page.</td></tr>`;
+            document.getElementById('tableBody').innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--neon-red);">Failed to load data. Please refresh the page.</td></tr>`;
         }
         hideLoading();
     }
@@ -173,67 +423,45 @@
 
     function formatDate(dateString) {
         if (!dateString) return '';
-        if (typeof dateString === 'string' && dateString.includes('T')) {
-            dateString = dateString.split('T')[0]; 
-        }
+        if (typeof dateString === 'string' && dateString.includes('T')) { dateString = dateString.split('T')[0]; }
         const parts = String(dateString).split('-');
         if (parts.length === 3) {
-            const date = new Date(parts[0], parts[1] - 1, parseInt(parts[2]));
-            return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+            return new Date(parts[0], parts[1] - 1, parseInt(parts[2])).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
         }
         let d = new Date(dateString);
-        if(!isNaN(d)) {
-             return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
-        }
+        if(!isNaN(d)) { return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' }); }
         return String(dateString);
     }
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-        const num = numInput.value.trim();
-        const rep = repInput.value.trim();
-        const reason = reasonInput.value.trim();
+        const num = numInput.value.trim(); const rep = repInput.value.trim(); const reason = reasonInput.value.trim();
 
         const duplicateRecord = records.find(r => r.number === num && r.id !== editingId);
         if (duplicateRecord) {
             alert(`Number ${num} has already been entered! Redirecting to the record.`);
             document.getElementById('searchNum').value = num;
-            document.getElementById('filterRep').value = "";
-            document.getElementById('filterReason').value = "";
-            renderTable(num);
-            cancelEdit();
-            return;
+            document.getElementById('filterRep').value = ""; document.getElementById('filterReason').value = "";
+            renderTable(num); cancelEdit(); return;
         }
 
         if (editingId) {
             const recordIndex = records.findIndex(r => r.id === editingId);
             if(recordIndex !== -1) {
-                records[recordIndex].number = num;
-                records[recordIndex].rep = rep;
-                records[recordIndex].reason = reason;
+                records[recordIndex].number = num; records[recordIndex].rep = rep; records[recordIndex].reason = reason;
                 syncToCloud('EDIT', records[recordIndex]);
             }
-            editingId = null;
-            submitBtn.textContent = "Add Record";
-            cancelBtn.style.display = "none";
+            editingId = null; submitBtn.textContent = "Add Record"; cancelBtn.style.display = "none";
         } else {
             const newRecord = { 
                 id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                number: num, 
-                rep: rep, 
-                reason: reason,
-                enteredDate: getLocalDateString()
+                number: num, rep: rep, reason: reason, enteredDate: getLocalDateString()
             };
-            records.push(newRecord);
-            syncToCloud('ADD', newRecord);
+            records.push(newRecord); syncToCloud('ADD', newRecord);
         }
-
-        form.reset();
-        updateFilters();
-        renderTable();
+        form.reset(); updateFilters(); renderTable();
     });
 
-    // --- BULK SMART EXCEL IMPORTER ---
     function importExcel() {
         const fileInput = document.getElementById('excelFile');
         const file = fileInput.files[0];
@@ -243,83 +471,47 @@
         reader.onload = async function(e) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
             
-            if(rawRows.length < 2) {
-                alert("Excel sheet appears to be empty.");
-                return;
-            }
+            if(rawRows.length < 2) { alert("Excel sheet appears to be empty."); return; }
 
             let headers = rawRows[0].map(h => String(h).toLowerCase());
-            
             let numIdx = headers.findIndex(h => h.includes('num'));
             let repIdx = headers.findIndex(h => h.includes('rep') || h.includes('name'));
             let reasonIdx = headers.findIndex(h => h.includes('reason'));
             let dateIdx = headers.findIndex(h => h.includes('date') || h.includes('time'));
             
-            if(numIdx === -1) numIdx = 0; 
-            if(repIdx === -1) repIdx = 1; 
-            if(reasonIdx === -1) reasonIdx = 2; 
-            if(dateIdx === -1) dateIdx = 3; 
+            if(numIdx === -1) numIdx = 0; if(repIdx === -1) repIdx = 1; if(reasonIdx === -1) reasonIdx = 2; if(dateIdx === -1) dateIdx = 3; 
 
-            let skipCount = 0;
-            let recordsToAdd = [];
+            let skipCount = 0; let recordsToAdd = [];
 
             for(let i = 1; i < rawRows.length; i++) {
                 let row = rawRows[i];
                 if (!row || row.length === 0) continue; 
-
-                let num = row[numIdx];
-                let rep = row[repIdx] || "";
-                let reason = row[reasonIdx] || "";
-                let rawDate = row[dateIdx];
+                let num = row[numIdx]; let rep = row[repIdx] || ""; let reason = row[reasonIdx] || ""; let rawDate = row[dateIdx];
 
                 if (num !== undefined && num !== null && String(num).trim() !== '') {
                     const strNum = String(num).trim();
-                    
-                    if (records.some(r => r.number === strNum) || recordsToAdd.some(r => r.number === strNum)) {
-                        skipCount++;
-                        continue;
-                    }
+                    if (records.some(r => r.number === strNum) || recordsToAdd.some(r => r.number === strNum)) { skipCount++; continue; }
 
                     let finalDate = getLocalDateString();
                     if (rawDate) {
                         if (rawDate instanceof Date) {
-                            const yyyy = rawDate.getUTCFullYear();
-                            const mm = String(rawDate.getUTCMonth() + 1).padStart(2, '0');
-                            const dd = String(rawDate.getUTCDate()).padStart(2, '0');
-                            finalDate = `${yyyy}-${mm}-${dd}`;
+                            finalDate = `${rawDate.getUTCFullYear()}-${String(rawDate.getUTCMonth() + 1).padStart(2, '0')}-${String(rawDate.getUTCDate()).padStart(2, '0')}`;
                         } else {
                             let d = new Date(rawDate);
-                            if (!isNaN(d)) {
-                                const yyyy = d.getFullYear();
-                                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                                const dd = String(d.getDate()).padStart(2, '0');
-                                finalDate = `${yyyy}-${mm}-${dd}`;
-                            }
+                            if (!isNaN(d)) { finalDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
                         }
                     }
 
-                    recordsToAdd.push({
-                        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                        number: strNum,
-                        rep: String(rep).trim(),
-                        reason: String(reason).trim(),
-                        enteredDate: finalDate
-                    });
+                    recordsToAdd.push({ id: Date.now().toString() + Math.random().toString(36).substr(2, 5), number: strNum, rep: String(rep).trim(), reason: String(reason).trim(), enteredDate: finalDate });
                 }
             }
 
             if(recordsToAdd.length > 0) {
-                recordsToAdd.forEach(r => records.push(r));
-                updateFilters();
-                renderTable();
-                
+                recordsToAdd.forEach(r => records.push(r)); updateFilters(); renderTable();
                 await syncToCloud('BULK_ADD', recordsToAdd);
-                
                 alert(`Import Complete!\nSuccessfully added and synced: ${recordsToAdd.length} records.\nSkipped duplicates: ${skipCount}`);
             } else {
                 alert(`Import Finished. 0 new records added.\nSkipped duplicates/blank rows: ${skipCount}`);
@@ -331,12 +523,7 @@
 
     function exportExcel() {
         if (records.length === 0) { alert("No records to export!"); return; }
-        const exportData = records.map(record => ({
-            "Number": record.number,
-            "Rep Name": record.rep,
-            "Reason": record.reason,
-            "Entered Date": record.enteredDate 
-        }));
+        const exportData = records.map(record => ({ "Number": record.number, "Rep Name": record.rep, "Reason": record.reason, "Entered Date": record.enteredDate }));
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Records Data");
@@ -361,8 +548,7 @@
             const formattedDate = formatDate(record.enteredDate);
             if (formattedDate !== currentCategoryDate) {
                 currentCategoryDate = formattedDate;
-                const dateHeaderRow = document.createElement('tr');
-                dateHeaderRow.classList.add('date-header');
+                const dateHeaderRow = document.createElement('tr'); dateHeaderRow.classList.add('date-header');
                 dateHeaderRow.innerHTML = `<td colspan="4">📅 ${formattedDate}</td>`;
                 tableBody.appendChild(dateHeaderRow);
             }
@@ -370,9 +556,9 @@
             const tr = document.createElement('tr');
             if (highlightNum === record.number) { tr.classList.add('highlight'); }
             tr.innerHTML = `
-                <td><strong>${record.number}</strong></td>
-                <td>${record.rep}</td>
-                <td>${record.reason}</td>
+                <td style="font-weight:600;">${record.number}</td>
+                <td style="color:var(--neon-blue); font-weight: 500;">${record.rep}</td>
+                <td style="color:var(--text-muted);">${record.reason}</td>
                 <td>
                     <button class="edit-btn" onclick="editRecord('${record.id}')">Edit</button>
                     <button class="delete-btn" onclick="deleteRecord('${record.id}')">Delete</button>
@@ -382,72 +568,44 @@
         });
 
         if(records.length > 0 && tableBody.innerHTML === "") {
-            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No matching records found.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 20px;">No matching records found.</td></tr>`;
         } else if (records.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No records exist yet. Try adding one!</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 20px;">No records exist yet. Try adding one!</td></tr>`;
         }
     }
 
     function editRecord(id) {
-        const record = records.find(r => r.id === id);
-        if(!record) return;
+        const record = records.find(r => r.id === id); if(!record) return;
         editingId = record.id;
-        numInput.value = record.number;
-        repInput.value = record.rep;
-        reasonInput.value = record.reason;
-        submitBtn.textContent = "Update Record";
-        cancelBtn.style.display = "inline-block";
-        window.scrollTo(0, 0);
+        numInput.value = record.number; repInput.value = record.rep; reasonInput.value = record.reason;
+        submitBtn.textContent = "Update Record"; cancelBtn.style.display = "inline-block"; window.scrollTo(0, 0);
     }
 
     function cancelEdit() {
-        editingId = null;
-        form.reset();
-        submitBtn.textContent = "Add Record";
-        cancelBtn.style.display = "none";
+        editingId = null; form.reset(); submitBtn.textContent = "Add Record"; cancelBtn.style.display = "none";
     }
 
     function deleteRecord(id) {
         if(confirm("Are you sure you want to delete this record?")) {
-            records = records.filter(r => r.id !== id);
-            syncToCloud('DELETE', { id: id });
-            updateFilters();
-            renderTable();
-            if(editingId === id) cancelEdit();
+            records = records.filter(r => r.id !== id); syncToCloud('DELETE', { id: id });
+            updateFilters(); renderTable(); if(editingId === id) cancelEdit();
         }
     }
 
     function updateFilters() {
-        const repFilter = document.getElementById('filterRep');
-        const reasonFilter = document.getElementById('filterReason');
+        const repFilter = document.getElementById('filterRep'); const reasonFilter = document.getElementById('filterReason');
+        const repDatalist = document.getElementById('repSuggestions'); const reasonDatalist = document.getElementById('reasonSuggestions');
+        const currentRep = repFilter.value; const currentReason = reasonFilter.value;
         
-        // Grab datalists for text suggestions
-        const repDatalist = document.getElementById('repSuggestions');
-        const reasonDatalist = document.getElementById('reasonSuggestions');
-
-        const currentRep = repFilter.value;
-        const currentReason = reasonFilter.value;
-        
-        // Extract unique Rep Names and Reasons from all saved records
         const reps = [...new Set(records.map(r => r.rep).filter(r => r !== ""))];
         const reasons = [...new Set(records.map(r => r.reason).filter(r => r !== ""))];
         
-        // --- Populate the search dropdown filters ---
-        repFilter.innerHTML = '<option value="">All Rep Names</option>';
-        reps.forEach(rep => repFilter.innerHTML += `<option value="${rep}">${rep}</option>`);
-        
-        reasonFilter.innerHTML = '<option value="">All Reasons</option>';
-        reasons.forEach(reason => reasonFilter.innerHTML += `<option value="${reason}">${reason}</option>`);
-        
-        // --- Populate the input text box suggestions ---
-        repDatalist.innerHTML = '';
-        reps.forEach(rep => repDatalist.innerHTML += `<option value="${rep}">`);
-        
-        reasonDatalist.innerHTML = '';
-        reasons.forEach(reason => reasonDatalist.innerHTML += `<option value="${reason}">`);
+        repFilter.innerHTML = '<option value="">All Rep Names</option>'; reps.forEach(rep => repFilter.innerHTML += `<option value="${rep}">${rep}</option>`);
+        reasonFilter.innerHTML = '<option value="">All Reasons</option>'; reasons.forEach(reason => reasonFilter.innerHTML += `<option value="${reason}">${reason}</option>`);
+        repDatalist.innerHTML = ''; reps.forEach(rep => repDatalist.innerHTML += `<option value="${rep}">`);
+        reasonDatalist.innerHTML = ''; reasons.forEach(reason => reasonDatalist.innerHTML += `<option value="${reason}">`);
 
-        if(reps.includes(currentRep)) repFilter.value = currentRep;
-        if(reasons.includes(currentReason)) reasonFilter.value = currentReason;
+        if(reps.includes(currentRep)) repFilter.value = currentRep; if(reasons.includes(currentReason)) reasonFilter.value = currentReason;
     }
 
     loadData();
