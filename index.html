@@ -3,514 +3,456 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Record Management System</title>
-    
-    <!-- SheetJS library for reading and writing Excel files -->
+    <title>Record Management System (Cloud Edition)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f4f4f9; color: #333; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
-        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; color: #2c3e50; display: flex; justify-content: space-between; align-items: center; }
-        .status-dot { height: 12px; width: 12px; background-color: #f39c12; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .status-text { font-size: 0.9rem; font-weight: normal; color: #7f8c8d; display: flex; align-items: center; }
-        .form-group { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-        input[type="text"], input[type="month"] { padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 140px; }
-        button { padding: 0.5rem 1rem; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #2980b9; }
-        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
-        .btn-cancel { background-color: #95a5a6; }
-        .btn-cancel:hover { background-color: #7f8c8d; }
-        .btn-delete { background-color: #e74c3c; padding: 0.3rem 0.6rem; font-size: 0.9rem; }
-        .btn-delete:hover { background-color: #c0392b; }
-        .btn-edit { background-color: #f39c12; padding: 0.3rem 0.6rem; font-size: 0.9rem; }
-        .btn-edit:hover { background-color: #d68910; }
-        .toolbar { margin-top: 2rem; margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-        .toolbar input[type="text"] { flex: 1; padding: 0.8rem; box-sizing: border-box; font-size: 1rem; border: 2px solid #3498db; min-width: 200px; }
-        .btn-import { background-color: #27ae60; color: white; padding: 0.8rem 1rem; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: 0.2s; }
-        .btn-import:hover { background-color: #2ecc71; }
-        .btn-export { background-color: #8e44ad; color: white; padding: 0.8rem 1rem; border-radius: 4px; cursor: pointer; font-weight: bold; border: none; white-space: nowrap; transition: 0.2s; }
-        .btn-export:hover { background-color: #9b59b6; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #2c3e50; color: white; vertical-align: top; }
-        th select { width: 100%; margin-top: 8px; padding: 6px; border-radius: 4px; border: none; color: #333; font-family: inherit; font-size: 0.9rem; box-sizing: border-box; cursor: pointer; }
-        .date-group-header { background-color: #ecf0f1; color: #2c3e50; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
-        .date-group-header td { padding: 8px 12px; font-size: 0.9rem; }
-        #messageBox { padding: 10px; border-radius: 4px; margin-bottom: 1rem; display: none; font-weight: bold; }
-        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .highlight-row { animation: flashWarning 2s ease-out; }
-        @keyframes flashWarning { 0% { background-color: #f1c40f; } 100% { background-color: transparent; } }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f9f9f9; color: #333; }
+        h2 { text-align: center; margin-bottom: 5px; }
+        .sync-status { text-align: center; font-size: 14px; font-weight: bold; color: #d35400; min-height: 20px; margin-bottom: 15px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .form-section, .filter-section, .import-section { display: flex; gap: 10px; margin-bottom: 20px; padding: 15px; background: #f1f5f9; border-radius: 5px; flex-wrap: wrap; align-items: center; }
+        .import-section { background: #e2e8f0; border: 1px dashed #cbd5e1; }
+        input, select, button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        input:not([type="file"]) { flex: 1; min-width: 140px; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; white-space: nowrap; }
+        button:hover { background-color: #0056b3; }
+        button.delete-btn { background-color: #dc3545; }
+        button.delete-btn:hover { background-color: #a71d2a; }
+        button.edit-btn { background-color: #ffc107; color: black; }
+        button.edit-btn:hover { background-color: #d39e00; }
+        button.import-btn { background-color: #28a745; }
+        button.import-btn:hover { background-color: #218838; }
+        button.export-btn { background-color: #17a2b8; }
+        button.export-btn:hover { background-color: #138496; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:hover:not(.date-header) { background-color: #f1f1f1; }
+        .date-header { background-color: #e2e8f0; font-weight: bold; color: #1e293b; font-size: 15px; border-top: 2px solid #cbd5e1; }
+        .date-header td { padding: 10px 15px; }
+        .highlight { background-color: #fff3cd !important; transition: background-color 0.5s ease; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>
-            Data Entry System
-            <span class="status-text"><span class="status-dot" id="syncStatus"></span> <span id="syncText">Checking cloud...</span></span>
-        </h2>
-        
-        <div id="messageBox"></div>
+<div class="container">
+    <h2>Record Management System</h2>
+    
+    <div id="syncStatus" class="sync-status"></div>
 
-        <datalist id="repSuggestions"></datalist>
-        <datalist id="reasonSuggestions"></datalist>
-
-        <form id="recordForm">
-            <input type="hidden" id="editId">
-            
-            <div class="form-group">
-                <input type="text" id="numInput" placeholder="Receipt No" required autocomplete="off">
-                <input type="month" id="dateInput" required>
-                <input type="text" id="repInput" placeholder="Representative" required autocomplete="off" list="repSuggestions">
-                <input type="text" id="reasonInput" placeholder="Reason" required autocomplete="off" list="reasonSuggestions">
-                <button type="submit" id="submitBtn">Save Record</button>
-                <button type="button" class="btn-cancel" id="cancelBtn" style="display: none;" onclick="cancelEdit()">Cancel</button>
-            </div>
-        </form>
-
-        <div class="toolbar">
-            <input type="text" id="searchInput" placeholder="Search any text..." autocomplete="off">
-            <label for="excelUpload" class="btn-import">📥 Import Excel</label>
-            <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" style="display: none;">
-            <button class="btn-export" id="exportBtn">📤 Export Excel</button>
-        </div>
-
-        <table id="dataTable">
-            <thead>
-                <tr>
-                    <th>RECIEPT NO</th>
-                    <th>MONTH</th>
-                    <th>
-                        REP
-                        <select id="filterRep">
-                            <option value="">All Reps</option>
-                        </select>
-                    </th>
-                    <th>
-                        REASON
-                        <select id="filterReason">
-                            <option value="">All Reasons</option>
-                        </select>
-                    </th>
-                    <th style="width: 150px;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Records will be injected here instantly -->
-            </tbody>
-        </table>
+    <div class="import-section">
+        <strong>Data Options:</strong>
+        <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
+        <button class="import-btn" onclick="importExcel()" id="importBtn">Import Excel</button>
+        <button class="export-btn" onclick="exportExcel()">Export to Excel</button>
     </div>
 
-    <script>
-        // GOOGLE SHEETS LINK
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwEqeL-i4nGtKGpoIqYquZKSXMURsXbgl5-YGhY8SK2RyWqtOjnm-3LyU9nDf7dtx57/exec';
+    <!-- Input Form WITH Suggestions Links -->
+    <form class="form-section" id="recordForm">
+        <input type="number" id="numInput" placeholder="Enter Number" required>
         
-        const syncDot = document.getElementById('syncStatus');
-        const syncText = document.getElementById('syncText');
+        <!-- Rep Name Input + Datalist -->
+        <input type="text" id="repInput" placeholder="Enter Rep Name" required list="repSuggestions" autocomplete="off">
+        <datalist id="repSuggestions"></datalist>
 
-        let records = JSON.parse(localStorage.getItem('myRecords')) || [];
+        <!-- Reason Input + Datalist -->
+        <input type="text" id="reasonInput" placeholder="Enter Reason" required list="reasonSuggestions" autocomplete="off">
+        <datalist id="reasonSuggestions"></datalist>
 
-        function getLocalYYYYMMDD(dateObj) {
-            const y = dateObj.getFullYear();
-            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const d = String(dateObj.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
-        }
+        <button type="submit" id="submitBtn">Add Record</button>
+        <button type="button" id="cancelBtn" style="display:none;" onclick="cancelEdit()">Cancel</button>
+    </form>
 
-        const todayStr = getLocalYYYYMMDD(new Date());
-        const yestObj = new Date();
-        yestObj.setDate(yestObj.getDate() - 1);
-        const yestStr = getLocalYYYYMMDD(yestObj);
+    <div class="filter-section">
+        <strong>Search & Filter:</strong>
+        <input type="number" id="searchNum" placeholder="Search by Number..." onkeyup="renderTable()">
+        <select id="filterRep" onchange="renderTable()">
+            <option value="">All Rep Names</option>
+        </select>
+        <select id="filterReason" onchange="renderTable()">
+            <option value="">All Reasons</option>
+        </select>
+    </div>
 
-        records = records.map(r => {
-            if (r.date && (r.date.includes('GMT') || r.date.includes('('))) {
-                let cleanStr = r.date.replace(/\(.*?\)/g, '').trim(); 
-                let d = new Date(cleanStr);
-                if (!isNaN(d)) r.date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            }
-            if (r.entryDate && (r.entryDate.includes('GMT') || r.entryDate.includes('('))) {
-                let cleanStr = r.entryDate.replace(/\(.*?\)/g, '').trim(); 
-                let d = new Date(cleanStr);
-                if (!isNaN(d)) r.entryDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            } else if (!r.entryDate) {
-                let ts = Math.floor(r.id);
-                if (ts < 1000000000000) ts = Date.now(); 
-                r.entryDate = getLocalYYYYMMDD(new Date(ts));
-            }
-            return r;
-        });
-        localStorage.setItem('myRecords', JSON.stringify(records));
+    <table>
+        <thead>
+            <tr>
+                <th>Number</th>
+                <th>Rep Name</th>
+                <th>Reason</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <tr><td colspan="4" style="text-align:center;">Loading data from cloud... Please wait.</td></tr>
+        </tbody>
+    </table>
+</div>
 
-        const form = document.getElementById('recordForm');
-        const tbody = document.querySelector('#dataTable tbody');
-        const messageBox = document.getElementById('messageBox');
-        
-        const searchInput = document.getElementById('searchInput');
-        const filterRep = document.getElementById('filterRep');
-        const filterReason = document.getElementById('filterReason');
-        
-        const excelUpload = document.getElementById('excelUpload');
-        const exportBtn = document.getElementById('exportBtn');
-        
-        // INSTANT LOAD
-        updateSuggestionsAndFilters();
-        applyFilters(); 
+<script>
+    // --- YOUR CONNECTED GOOGLE SCRIPT URL ---
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4uwjSxZzYrVZjNglumyw1KFvFWRqR6WG8DlRxEkPI6BZ1CeZU3v1NkWk3SyB242rMyg/exec';
+    
+    let records = [];
+    let editingId = null;
 
-        // -----------------------------
-        // CLOUD COMMUNICATION LOGIC
-        // -----------------------------
-        async function fetchRecordsFromCloud() {
-            try {
-                const response = await fetch(SCRIPT_URL + '?t=' + Date.now());
-                const rawRecords = await response.json();
-                
-                let freshRecords = [];
-                let seenNumbers = new Set();
+    const form = document.getElementById('recordForm');
+    const numInput = document.getElementById('numInput');
+    const repInput = document.getElementById('repInput');
+    const reasonInput = document.getElementById('reasonInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const syncStatus = document.getElementById('syncStatus');
 
-                rawRecords.forEach(r => {
-                    const numKey = String(r.number).toLowerCase().trim();
-                    if (seenNumbers.has(numKey)) return; 
-                    seenNumbers.add(numKey);
-                    
-                    let cDate = String(r.date || '');
-                    if (cDate.includes('T')) cDate = cDate.split('T')[0].substring(0,7);
-                    else if (cDate.includes('GMT') || cDate.includes('(')) {
-                        let d = new Date(cDate.replace(/\(.*?\)/g, '').trim());
-                        if (!isNaN(d)) cDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                    }
+    function showLoading(message) { syncStatus.innerHTML = `⏳ ${message}`; }
+    function hideLoading() { syncStatus.innerHTML = ``; }
 
-                    let cEntry = String(r.entryDate || '');
-                    if (cEntry.includes('T')) cEntry = cEntry.split('T')[0];
-                    else if (cEntry.includes('GMT') || cEntry.includes('(')) {
-                        let d = new Date(cEntry.replace(/\(.*?\)/g, '').trim());
-                        if (!isNaN(d)) cEntry = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    }
-                    
-                    if (!cEntry || cEntry === 'undefined') cEntry = todayStr;
-
-                    freshRecords.push({
-                        id: Number(r.id),
-                        number: String(r.number).trim(),
-                        date: cDate,
-                        rep: String(r.rep || '').trim(),
-                        reason: String(r.reason || '').trim(),
-                        entryDate: cEntry
-                    });
-                });
-                
-                records = freshRecords;
-                localStorage.setItem('myRecords', JSON.stringify(records));
-                
-                syncDot.style.backgroundColor = '#2ecc71';
-                syncText.textContent = 'Synced with Cloud';
-
-                updateSuggestionsAndFilters();
-                applyFilters();
-            } catch (error) {
-                syncDot.style.backgroundColor = '#2ecc71';
-                syncText.textContent = 'Using Local Data';
-            }
-        }
-
-        async function sendToCloud(payload) {
-            syncDot.style.backgroundColor = '#f39c12';
-            syncText.textContent = 'Saving...';
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify(payload)
-                });
-                syncDot.style.backgroundColor = '#2ecc71';
-                syncText.textContent = 'Synced with Cloud';
-            } catch (error) {
-                syncDot.style.backgroundColor = '#e74c3c';
-                syncText.textContent = 'Saved Locally (Offline)';
-            }
-        }
-
-        fetchRecordsFromCloud();
-
-        // -----------------------------
-        // DYNAMIC SUGGESTIONS & FILTERS
-        // -----------------------------
-        function updateSuggestionsAndFilters() {
-            const uniqueReps = [...new Set(records.map(r => r.rep).filter(val => val.trim() !== ''))].sort();
-            const uniqueReasons = [...new Set(records.map(r => r.reason).filter(val => val.trim() !== ''))].sort();
-
-            document.getElementById('repSuggestions').innerHTML = uniqueReps.map(r => `<option value="${r}">`).join('');
-            document.getElementById('reasonSuggestions').innerHTML = uniqueReasons.map(r => `<option value="${r}">`).join('');
-
-            const currentRepSelection = filterRep.value;
-            const currentReasonSelection = filterReason.value;
-
-            filterRep.innerHTML = '<option value="">All Reps</option>';
-            uniqueReps.forEach(rep => { filterRep.innerHTML += `<option value="${rep}">${rep}</option>`; });
-            filterRep.value = currentRepSelection || '';
-
-            filterReason.innerHTML = '<option value="">All Reasons</option>';
-            uniqueReasons.forEach(reason => { filterReason.innerHTML += `<option value="${reason}">${reason}</option>`; });
-            filterReason.value = currentReasonSelection || '';
-        }
-
-        // -----------------------------
-        // FILTERING LOGIC
-        // -----------------------------
-        function applyFilters() {
-            const searchTerm = searchInput.value.toLowerCase();
-            const selectedRep = filterRep.value.toLowerCase();
-            const selectedReason = filterReason.value.toLowerCase();
-
-            const filteredRecords = records.filter(rec => {
-                const matchesSearch = String(rec.number).toLowerCase().includes(searchTerm) ||
-                                      String(rec.date).toLowerCase().includes(searchTerm) ||
-                                      String(rec.rep || '').toLowerCase().includes(searchTerm) ||
-                                      String(rec.reason).toLowerCase().includes(searchTerm);
-                
-                const matchesRep = selectedRep === "" || String(rec.rep || '').toLowerCase() === selectedRep;
-                const matchesReason = selectedReason === "" || String(rec.reason).toLowerCase() === selectedReason;
-
-                return matchesSearch && matchesRep && matchesReason;
+    async function syncToCloud(action, recordData) {
+        showLoading(action === 'BULK_ADD' ? "Uploading batch to Database..." : "Syncing with Database...");
+        try {
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: action, record: recordData })
             });
-
-            renderTable(filteredRecords);
+        } catch (error) {
+            console.error('Error syncing:', error);
         }
+        hideLoading();
+    }
 
-        searchInput.addEventListener('input', applyFilters);
-        filterRep.addEventListener('change', applyFilters);
-        filterReason.addEventListener('change', applyFilters);
-
-        // -----------------------------
-        // RENDERING & GROUPING LOGIC (STRICT TIMESTAMP SORTING)
-        // -----------------------------
-        function renderTable(dataToRender) {
-            tbody.innerHTML = '';
+    async function loadData() {
+        showLoading("Downloading records from Cloud...");
+        try {
+            const response = await fetch(SCRIPT_URL + "?t=" + new Date().getTime());
+            const textData = await response.text();
             
-            if (dataToRender.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#7f8c8d; padding: 2rem;">No records found</td></tr>';
-                return;
+            if (textData.includes("<!DOCTYPE html>") || textData.includes("<html")) {
+                throw new Error("PERMISSION_DENIED");
             }
 
-            const sortedData = [...dataToRender].sort((a, b) => {
-                // 1. Sort by Entry Date (Groups Today above Yesterday)
-                let dateA = a.entryDate || "";
-                let dateB = b.entryDate || "";
-                if (dateA > dateB) return -1;
-                if (dateA < dateB) return 1;
-
-                // 2. Strict ID sort (The exact millisecond the save button was clicked - newest at top)
-                if (Number(a.id) > Number(b.id)) return -1;
-                if (Number(a.id) < Number(b.id)) return 1;
+            const data = JSON.parse(textData);
+            
+            records = data.map(row => {
+                const keys = Object.keys(row);
+                const findKey = (searchWord) => keys.find(k => k.toLowerCase().includes(searchWord.toLowerCase()));
                 
-                return 0;
-            });
+                const numKey = findKey('num');
+                const repKey = findKey('rep') || findKey('name');
+                const reasonKey = findKey('reason');
+                const dateKey = findKey('date');
+                const idKey = findKey('id');
 
-            let currentGroup = null;
+                return {
+                    id: idKey && row[idKey] ? String(row[idKey]) : (Date.now().toString() + Math.random().toString(36).substr(2, 5)),
+                    number: numKey && row[numKey] ? String(row[numKey]).trim() : "",
+                    rep: repKey && row[repKey] ? String(row[repKey]).trim() : "",
+                    reason: reasonKey && row[reasonKey] ? String(row[reasonKey]).trim() : "",
+                    enteredDate: dateKey && row[dateKey] ? row[dateKey] : getLocalDateString()
+                };
+            }).filter(r => r.number !== ""); 
 
-            sortedData.forEach(rec => {
-                if (rec.entryDate !== currentGroup) {
-                    currentGroup = rec.entryDate;
-                    
-                    let groupLabel = currentGroup;
-                    if (currentGroup === todayStr) {
-                        groupLabel = "Today";
-                    } else if (currentGroup === yestStr) {
-                        groupLabel = "Yesterday";
-                    }
+            updateFilters();
+            renderTable();
+        } catch (error) {
+            console.error('Error loading data:', error);
+            document.getElementById('tableBody').innerHTML = `<tr><td colspan="4" style="text-align:center;">Failed to load data. Please refresh the page.</td></tr>`;
+        }
+        hideLoading();
+    }
 
-                    const headerRow = document.createElement('tr');
-                    headerRow.className = 'date-group-header';
-                    headerRow.innerHTML = `<td colspan="5">⏱️ Entered on: ${groupLabel}</td>`;
-                    tbody.appendChild(headerRow);
-                }
+    function getLocalDateString() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
 
-                const tr = document.createElement('tr');
-                tr.id = 'row-' + rec.number;
-                tr.innerHTML = `
-                    <td><strong>${rec.number}</strong></td>
-                    <td>${rec.date}</td>
-                    <td>${rec.rep || ''}</td>
-                    <td>${rec.reason}</td>
-                    <td>
-                        <button class="btn-edit" onclick="editRecord(${rec.id})">Edit</button>
-                        <button class="btn-delete" onclick="deleteRecord(${rec.id})">Delete</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        if (typeof dateString === 'string' && dateString.includes('T')) {
+            dateString = dateString.split('T')[0]; 
+        }
+        const parts = String(dateString).split('-');
+        if (parts.length === 3) {
+            const date = new Date(parts[0], parts[1] - 1, parseInt(parts[2]));
+            return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        let d = new Date(dateString);
+        if(!isNaN(d)) {
+             return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        return String(dateString);
+    }
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const num = numInput.value.trim();
+        const rep = repInput.value.trim();
+        const reason = reasonInput.value.trim();
+
+        const duplicateRecord = records.find(r => r.number === num && r.id !== editingId);
+        if (duplicateRecord) {
+            alert(`Number ${num} has already been entered! Redirecting to the record.`);
+            document.getElementById('searchNum').value = num;
+            document.getElementById('filterRep').value = "";
+            document.getElementById('filterReason').value = "";
+            renderTable(num);
+            cancelEdit();
+            return;
         }
 
-        // -----------------------------
-        // EXCEL IMPORT / EXPORT LOGIC
-        // -----------------------------
-        exportBtn.addEventListener('click', function() {
-            if (records.length === 0) {
-                showMessage('No records to export!', 'error');
+        if (editingId) {
+            const recordIndex = records.findIndex(r => r.id === editingId);
+            if(recordIndex !== -1) {
+                records[recordIndex].number = num;
+                records[recordIndex].rep = rep;
+                records[recordIndex].reason = reason;
+                syncToCloud('EDIT', records[recordIndex]);
+            }
+            editingId = null;
+            submitBtn.textContent = "Add Record";
+            cancelBtn.style.display = "none";
+        } else {
+            const newRecord = { 
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                number: num, 
+                rep: rep, 
+                reason: reason,
+                enteredDate: getLocalDateString()
+            };
+            records.push(newRecord);
+            syncToCloud('ADD', newRecord);
+        }
+
+        form.reset();
+        updateFilters();
+        renderTable();
+    });
+
+    // --- BULK SMART EXCEL IMPORTER ---
+    function importExcel() {
+        const fileInput = document.getElementById('excelFile');
+        const file = fileInput.files[0];
+        if (!file) { alert("Please select an Excel file first."); return; }
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            if(rawRows.length < 2) {
+                alert("Excel sheet appears to be empty.");
                 return;
             }
 
-            const dataToExport = records.map(rec => ({
-                "RECIEPT NO": rec.number, "MONTH": rec.date, "REP": rec.rep || "", "REASON": rec.reason, "ENTERED DATE": rec.entryDate
-            }));
+            let headers = rawRows[0].map(h => String(h).toLowerCase());
+            
+            let numIdx = headers.findIndex(h => h.includes('num'));
+            let repIdx = headers.findIndex(h => h.includes('rep') || h.includes('name'));
+            let reasonIdx = headers.findIndex(h => h.includes('reason'));
+            let dateIdx = headers.findIndex(h => h.includes('date') || h.includes('time'));
+            
+            if(numIdx === -1) numIdx = 0; 
+            if(repIdx === -1) repIdx = 1; 
+            if(reasonIdx === -1) reasonIdx = 2; 
+            if(dateIdx === -1) dateIdx = 3; 
 
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Records");
-            XLSX.writeFile(workbook, `Records_${todayStr}.xlsx`);
-            showMessage(`Exported ${records.length} records successfully!`, 'success');
-        });
+            let skipCount = 0;
+            let recordsToAdd = [];
 
-        excelUpload.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+            for(let i = 1; i < rawRows.length; i++) {
+                let row = rawRows[i];
+                if (!row || row.length === 0) continue; 
 
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                let num = row[numIdx];
+                let rep = row[repIdx] || "";
+                let reason = row[reasonIdx] || "";
+                let rawDate = row[dateIdx];
 
-                if (jsonData.length === 0) {
-                    showMessage('The uploaded file appears to be empty.', 'error');
-                    excelUpload.value = ''; return;
-                }
+                if (num !== undefined && num !== null && String(num).trim() !== '') {
+                    const strNum = String(num).trim();
+                    
+                    if (records.some(r => r.number === strNum) || recordsToAdd.some(r => r.number === strNum)) {
+                        skipCount++;
+                        continue;
+                    }
 
-                let addedCount = 0; let skippedCount = 0;
-                let newRecordsToCloud = [];
-
-                jsonData.forEach(row => {
-                    const keys = Object.keys(row);
-                    const numKey = keys.find(k => k.toLowerCase().includes('receipt') || k.toLowerCase().includes('reciept') || k.toLowerCase().includes('number') || k.toLowerCase() === 'no');
-                    const dateKey = keys.find(k => k.toLowerCase().includes('date') || k.toLowerCase().includes('month'));
-                    const repKey = keys.find(k => k.toLowerCase().includes('rep'));
-                    const reasonKey = keys.find(k => k.toLowerCase().includes('reason') || k.toLowerCase().includes('desc'));
-
-                    const num = numKey ? String(row[numKey]).trim() : null;
-                    let date = '';
-                    const rep = repKey ? String(row[repKey]).trim() : '';
-                    const reason = reasonKey ? String(row[reasonKey]).trim() : '';
-
-                    if (dateKey && row[dateKey]) {
-                        const d = row[dateKey];
-                        if (d instanceof Date && !isNaN(d)) {
-                            date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    let finalDate = getLocalDateString();
+                    if (rawDate) {
+                        if (rawDate instanceof Date) {
+                            const yyyy = rawDate.getUTCFullYear();
+                            const mm = String(rawDate.getUTCMonth() + 1).padStart(2, '0');
+                            const dd = String(rawDate.getUTCDate()).padStart(2, '0');
+                            finalDate = `${yyyy}-${mm}-${dd}`;
                         } else {
-                            let parts = String(d).trim().split(/[-/]/);
-                            if (parts.length >= 2 && parts[0].length === 4) {
-                                date = `${parts[0]}-${parts[1].padStart(2, '0')}`;
-                            } else {
-                                date = String(d).trim();
+                            let d = new Date(rawDate);
+                            if (!isNaN(d)) {
+                                const yyyy = d.getFullYear();
+                                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                const dd = String(d.getDate()).padStart(2, '0');
+                                finalDate = `${yyyy}-${mm}-${dd}`;
                             }
                         }
                     }
 
-                    if (num && num !== 'undefined' && num !== 'null') {
-                        const exists = records.find(r => String(r.number).toLowerCase() === num.toLowerCase());
-                        if (!exists) {
-                            const newRec = { 
-                                id: Date.now() + Math.random(), 
-                                number: num, date: date, rep: rep, reason: reason, entryDate: todayStr 
-                            };
-                            records.push(newRec); newRecordsToCloud.push(newRec); addedCount++;
-                        } else { skippedCount++; }
-                    }
-                });
-
-                saveData();
-                if (newRecordsToCloud.length > 0) sendToCloud({ action: 'bulk_add', records: newRecordsToCloud });
-
-                updateSuggestionsAndFilters(); applyFilters(); excelUpload.value = ''; 
-                if (addedCount > 0) showMessage(`Import successful! Added ${addedCount} new records.`, 'success');
-                else showMessage(`No new records added. Skipped duplicates.`, 'error');
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        // -----------------------------
-        // FORM & CRUD LOGIC
-        // -----------------------------
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const idInput = document.getElementById('editId').value;
-            const num = document.getElementById('numInput').value.trim();
-            const date = document.getElementById('dateInput').value; 
-            const rep = document.getElementById('repInput').value.trim();
-            const reason = document.getElementById('reasonInput').value.trim();
-
-            const existingRecord = records.find(r => String(r.number).toLowerCase() === num.toLowerCase());
-
-            if (existingRecord && existingRecord.id.toString() !== idInput) {
-                showMessage(`Receipt No "${num}" was already entered! Redirecting to record...`, 'error');
-                searchInput.value = ''; filterRep.value = ''; filterReason.value = ''; applyFilters(); 
-                highlightRecord(num); return;
+                    recordsToAdd.push({
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                        number: strNum,
+                        rep: String(rep).trim(),
+                        reason: String(reason).trim(),
+                        enteredDate: finalDate
+                    });
+                }
             }
 
-            if (idInput) {
-                const index = records.findIndex(r => r.id.toString() === idInput);
-                const originalEntryDate = records[index].entryDate;
-                const updatedRecord = { id: Number(idInput), number: num, date: date, rep: rep, reason: reason, entryDate: originalEntryDate };
-                records[index] = updatedRecord;
-                sendToCloud({ action: 'edit', ...updatedRecord });
-                showMessage('Record updated successfully!', 'success');
+            if(recordsToAdd.length > 0) {
+                recordsToAdd.forEach(r => records.push(r));
+                updateFilters();
+                renderTable();
+                
+                await syncToCloud('BULK_ADD', recordsToAdd);
+                
+                alert(`Import Complete!\nSuccessfully added and synced: ${recordsToAdd.length} records.\nSkipped duplicates: ${skipCount}`);
             } else {
-                const newRecord = { id: Date.now(), number: num, date: date, rep: rep, reason: reason, entryDate: todayStr };
-                records.push(newRecord);
-                sendToCloud({ action: 'add', ...newRecord });
-                showMessage('Record saved successfully!', 'success');
+                alert(`Import Finished. 0 new records added.\nSkipped duplicates/blank rows: ${skipCount}`);
+            }
+            fileInput.value = ""; 
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function exportExcel() {
+        if (records.length === 0) { alert("No records to export!"); return; }
+        const exportData = records.map(record => ({
+            "Number": record.number,
+            "Rep Name": record.rep,
+            "Reason": record.reason,
+            "Entered Date": record.enteredDate 
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Records Data");
+        XLSX.writeFile(workbook, "System_Records_Export.xlsx");
+    }
+
+    function renderTable(highlightNum = null) {
+        const tableBody = document.getElementById('tableBody');
+        const searchNum = document.getElementById('searchNum').value;
+        const filterRep = document.getElementById('filterRep').value;
+        const filterReason = document.getElementById('filterReason').value;
+        tableBody.innerHTML = "";
+        
+        records.sort((a, b) => new Date(b.enteredDate) - new Date(a.enteredDate));
+        let currentCategoryDate = null;
+
+        records.forEach((record) => {
+            if (searchNum && !record.number.includes(searchNum)) return;
+            if (filterRep && record.rep !== filterRep) return;
+            if (filterReason && record.reason !== filterReason) return;
+
+            const formattedDate = formatDate(record.enteredDate);
+            if (formattedDate !== currentCategoryDate) {
+                currentCategoryDate = formattedDate;
+                const dateHeaderRow = document.createElement('tr');
+                dateHeaderRow.classList.add('date-header');
+                dateHeaderRow.innerHTML = `<td colspan="4">📅 ${formattedDate}</td>`;
+                tableBody.appendChild(dateHeaderRow);
             }
 
-            saveData(); updateSuggestionsAndFilters(); applyFilters(); cancelEdit();
+            const tr = document.createElement('tr');
+            if (highlightNum === record.number) { tr.classList.add('highlight'); }
+            tr.innerHTML = `
+                <td><strong>${record.number}</strong></td>
+                <td>${record.rep}</td>
+                <td>${record.reason}</td>
+                <td>
+                    <button class="edit-btn" onclick="editRecord('${record.id}')">Edit</button>
+                    <button class="delete-btn" onclick="deleteRecord('${record.id}')">Delete</button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
         });
 
-        function deleteRecord(id) {
-            if(confirm('Are you sure you want to delete this record?')) {
-                records = records.filter(r => r.id !== id);
-                saveData(); sendToCloud({ action: 'delete', id: id });
-                updateSuggestionsAndFilters(); applyFilters(); showMessage('Record deleted.', 'success');
-            }
+        if(records.length > 0 && tableBody.innerHTML === "") {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No matching records found.</td></tr>`;
+        } else if (records.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No records exist yet. Try adding one!</td></tr>`;
         }
+    }
 
-        function editRecord(id) {
-            const record = records.find(r => r.id === id);
-            if (!record) return;
+    function editRecord(id) {
+        const record = records.find(r => r.id === id);
+        if(!record) return;
+        editingId = record.id;
+        numInput.value = record.number;
+        repInput.value = record.rep;
+        reasonInput.value = record.reason;
+        submitBtn.textContent = "Update Record";
+        cancelBtn.style.display = "inline-block";
+        window.scrollTo(0, 0);
+    }
 
-            document.getElementById('editId').value = record.id;
-            document.getElementById('numInput').value = record.number;
-            let dVal = record.date || '';
-            if (dVal.length >= 7 && dVal.includes('-')) dVal = dVal.substring(0, 7); 
-            document.getElementById('dateInput').value = dVal;
-            document.getElementById('repInput').value = record.rep || '';
-            document.getElementById('reasonInput').value = record.reason;
+    function cancelEdit() {
+        editingId = null;
+        form.reset();
+        submitBtn.textContent = "Add Record";
+        cancelBtn.style.display = "none";
+    }
 
-            document.getElementById('submitBtn').textContent = 'Update Record';
-            document.getElementById('cancelBtn').style.display = 'inline-block';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+    function deleteRecord(id) {
+        if(confirm("Are you sure you want to delete this record?")) {
+            records = records.filter(r => r.id !== id);
+            syncToCloud('DELETE', { id: id });
+            updateFilters();
+            renderTable();
+            if(editingId === id) cancelEdit();
         }
+    }
 
-        function cancelEdit() {
-            form.reset(); document.getElementById('editId').value = '';
-            document.getElementById('submitBtn').textContent = 'Save Record';
-            document.getElementById('cancelBtn').style.display = 'none';
-        }
+    function updateFilters() {
+        const repFilter = document.getElementById('filterRep');
+        const reasonFilter = document.getElementById('filterReason');
+        
+        // Grab datalists for text suggestions
+        const repDatalist = document.getElementById('repSuggestions');
+        const reasonDatalist = document.getElementById('reasonSuggestions');
 
-        function highlightRecord(number) {
-            const row = document.getElementById('row-' + number);
-            if (row) {
-                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                row.classList.remove('highlight-row'); void row.offsetWidth; row.classList.add('highlight-row');
-            }
-        }
+        const currentRep = repFilter.value;
+        const currentReason = reasonFilter.value;
+        
+        // Extract unique Rep Names and Reasons from all saved records
+        const reps = [...new Set(records.map(r => r.rep).filter(r => r !== ""))];
+        const reasons = [...new Set(records.map(r => r.reason).filter(r => r !== ""))];
+        
+        // --- Populate the search dropdown filters ---
+        repFilter.innerHTML = '<option value="">All Rep Names</option>';
+        reps.forEach(rep => repFilter.innerHTML += `<option value="${rep}">${rep}</option>`);
+        
+        reasonFilter.innerHTML = '<option value="">All Reasons</option>';
+        reasons.forEach(reason => reasonFilter.innerHTML += `<option value="${reason}">${reason}</option>`);
+        
+        // --- Populate the input text box suggestions ---
+        repDatalist.innerHTML = '';
+        reps.forEach(rep => repDatalist.innerHTML += `<option value="${rep}">`);
+        
+        reasonDatalist.innerHTML = '';
+        reasons.forEach(reason => reasonDatalist.innerHTML += `<option value="${reason}">`);
 
-        function saveData() { localStorage.setItem('myRecords', JSON.stringify(records)); }
+        if(reps.includes(currentRep)) repFilter.value = currentRep;
+        if(reasons.includes(currentReason)) reasonFilter.value = currentReason;
+    }
 
-        function showMessage(text, type) {
-            messageBox.textContent = text; messageBox.className = type; messageBox.style.display = 'block';
-            setTimeout(() => { messageBox.style.display = 'none'; }, 5000);
-        }
-    </script>
+    loadData();
+
+</script>
+
 </body>
 </html>
